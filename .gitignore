@@ -1,4 +1,15 @@
-# Logs
+.DS_Store
+node_modules
+db.sqlite3
+/dist
+/venv
+__pycache__
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
 logs
 *.log
 npm-debug.log*
@@ -6,16 +17,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
-node_modules
-.DS_Store
-dist
-dist-ssr
-coverage
-*.local
-
-/cypress/videos/
-/cypress/screenshots/
 
 # Editor directories and files
 .vscode/*
@@ -27,14 +28,10 @@ coverage
 *.sln
 *.sw?
 
-*.tsbuildinfo
+# the file TODO.md
+TODO.md
 
-# Config 
-package-lock.json
-*.editorconfig
+# IDE
+media
 
-# Confidentials
-*.env
-
-# Test folder
-/test
+test
