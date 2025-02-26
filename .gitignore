@@ -35,3 +35,6 @@ package-lock.json
 
 # Confidentials
 *.env
+
+# Test folder
+/test

@@ -1,6 +1,14 @@
 # Llog
 
-HES-SO School Project, make use of [LlamaIndex](https://github.com/run-llama/llama_index) on notes taken in [Notion](https://www.notion.com) during our previous academic semesters.
+![alt text](assets/cover.png)
+
+Llog is an HES-SO school project that leverages [LlamaIndex](https://github.com/run-llama/llama_index) on notes taken in [Notion](https://www.notion.com) during previous academic semesters.
+
+The goal is to provide a simple and accurate way to search for notes in Notion, using the LlamaIndex framework.
+
+## Full Documentation
+
+See the [Wiki](https://github.com/davidmarsoni/Llog/wiki) for full documentation, examples, operational details and other information.
 
 ## Recommended IDE Setup
 
