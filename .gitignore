@@ -6,6 +6,7 @@ db.sqlite3
 __pycache__
 
 # local env files
+*.env
 .env.local
 .env.*.local
 
@@ -35,3 +36,4 @@ TODO.md
 media
 
 test
+
