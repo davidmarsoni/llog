@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>{% block title %}{% endblock %}</title>
+        <!-- Add the Tailwind CSS file -->
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind.css')}}" />
+    </head>
+
+    <body class="bg-gray-100">
+        <!-- Your content here -->
+        <div class="container mx-auto">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </body>
+</html>

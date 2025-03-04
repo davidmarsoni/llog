@@ -1,0 +1,4 @@
+flask
+google-cloud-storage
+python-dotenv
+gunicorn
