@@ -103,7 +103,10 @@ gcloud run deploy flask-app `
   --set-env-vars=FLASK_SECRET_KEY=your-secret-key-value `
   --service-account=your-service-account-email`
   --allow-unauthenticated `
-  --region=us-central1
+  --region=us-central1 `
+  --cpu=1 `
+  --memory=256Mi `
+  --concurrency=1 `
 ```
 
 p.s you can add a new service account  with the admin role to the project by running the following command:

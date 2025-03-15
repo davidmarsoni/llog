@@ -16,7 +16,7 @@
     <!-- Upload Section -->
     <div class="bg-white p-4 rounded border mb-6">
         <h2 class="text-2xl font-bold mb-4">Upload Files</h2>
-        <form method="POST" action="{{ url_for('upload_file') }}" enctype="multipart/form-data" class="mb-4">
+        <form method="POST" action="{{ url_for('file_storage.upload_file') }}" enctype="multipart/form-data" class="mb-4">
             <div class="mb-4">
                 <label for="file" class="block text-gray-700 font-bold mb-2">Select file to upload:</label>
                 <input type="file" name="file" id="file" class="border border-gray-300 p-2 w-full rounded">
@@ -50,7 +50,7 @@
                         <td class="p-2">{{ file.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                         <td class="p-2">{{ file.content_type }}</td>
                         <td class="p-2">
-                            <form method="POST" action="{{ url_for('delete_file', filename=file.name) }}" onsubmit="return confirm('Are you sure you want to delete this file?');">
+                            <form method="POST" action="{{ url_for('file_storage.delete_file', filename=file.name) }}" onsubmit="return confirm('Are you sure you want to delete this file?');">
                                 <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-sm">
                                     Delete
                                 </button>
@@ -66,7 +66,7 @@
     </div>
     
     <div class="mt-6">
-        <a href="{{ url_for('home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
             Back to Home
         </a>
     </div>

@@ -21,10 +21,13 @@
                 Send
             </button>
         </div>
+        <div id="loading-indicator" class="hidden mt-2 text-sm text-gray-500">
+            AI is thinking...
+        </div>
     </div>
     
     <div class="mt-6">
-        <a href="{{ url_for('home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
             Back to Home
         </a>
     </div>
@@ -35,20 +38,7 @@
             const userInput = document.getElementById('user-input');
             const sendBtn = document.getElementById('send-btn');
             const chatContainer = document.getElementById('chat-container');
-            
-            // Hardcoded responses
-            const responses = {
-                "hello": "Hello! How can I assist you today?",
-                "hi": "Hi there! What can I do for you?",
-                "how are you": "I'm just a program, but I'm functioning well! How can I help you?",
-                "help": "I can answer questions about our services, provide information, or assist with basic tasks.",
-                "bye": "Goodbye! Have a great day!",
-                "thanks": "You're welcome! Is there anything else I can help with?",
-                "thank you": "You're welcome! Is there anything else I can help with?"
-            };
-            
-            // Default response for unrecognized inputs
-            const defaultResponse = "I'm not sure how to respond to that. Could you rephrase or ask something else?";
+            const loadingIndicator = document.getElementById('loading-indicator');
             
             function addMessage(sender, text, isAi = false) {
                 const messageDiv = document.createElement('div');
@@ -69,8 +59,8 @@
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             }
             
-            function handleUserInput() {
-                const userText = userInput.value.trim().toLowerCase();
+            async function handleUserInput() {
+                const userText = userInput.value.trim();
                 if (!userText) return;
                 
                 // Add user message to chat
@@ -79,21 +69,34 @@
                 // Clear input field
                 userInput.value = '';
                 
-                // Simulate processing time
-                setTimeout(() => {
-                    // Get response (hardcoded for now)
-                    let botResponse = defaultResponse;
+                // Show loading indicator
+                loadingIndicator.classList.remove('hidden');
+                sendBtn.disabled = true;
+                
+                try {
+                    // Call the backend API
+                    const response = await fetch('/chatbot/query', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query: userText })
+                    });
                     
-                    for (const [key, value] of Object.entries(responses)) {
-                        if (userText.includes(key)) {
-                            botResponse = value;
-                            break;
-                        }
-                    }
+                    const data = await response.json();
                     
                     // Add bot response
-                    addMessage('AI Assistant', botResponse, true);
-                }, 500);
+                    addMessage('AI Assistant', data.response, true);
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('AI Assistant', 'Sorry, there was an error processing your request.', true);
+                } finally {
+                    // Hide loading indicator
+                    loadingIndicator.classList.add('hidden');
+                    sendBtn.disabled = false;
+                    // Focus input field
+                    userInput.focus();
+                }
             }
             
             // Event listeners
