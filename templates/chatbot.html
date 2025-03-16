@@ -4,6 +4,44 @@
     <h1 class="text-3xl font-bold mb-4">{% block title %}AI Assistant{% endblock %}</h1>
     
     <div class="bg-white p-4 rounded border mb-6">
+        <!-- Notion Content Selection -->
+        <div class="mb-4 p-4 border rounded bg-gray-50">
+            <h3 class="text-lg font-semibold mb-2">Knowledge Base</h3>
+            <div class="flex items-center mb-2">
+                <input type="checkbox" id="use-notion" class="mr-2">
+                <label for="use-notion">Use cached Notion content</label>
+            </div>
+            <div id="notion-options" class="ml-6 hidden">
+                <p class="text-sm text-gray-600 mb-2">Select Notion pages/databases to use for context:</p>
+                <div id="notion-indexes-container" class="max-h-40 overflow-y-auto border rounded p-2 bg-white">
+                    {% if notion_indexes %}
+                        {% for index in notion_indexes %}
+                        <div class="flex items-center mb-1">
+                            <input type="checkbox" 
+                                   id="notion-{{ index.id }}" 
+                                   class="notion-index-checkbox mr-2"
+                                   value="{{ index.id }}">
+                            <label for="notion-{{ index.id }}" class="text-sm">
+                                <span class="font-medium">{{ index.title }}</span>
+                                <span class="text-xs text-gray-500">({{ index.type }})</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-sm text-gray-500">No cached Notion content available. 
+                           <a href="{{ url_for('file_storage.manage_files') }}" class="text-blue-500 hover:underline">
+                              Add some in the File Management page.
+                           </a>
+                        </p>
+                    {% endif %}
+                </div>
+                <button id="refresh-indexes" class="text-xs text-blue-600 hover:underline mt-1">
+                    Refresh available indexes
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
         <div id="chat-container" class="border rounded p-4 mb-4 h-80 overflow-y-auto">
             <div class="mb-4">
                 <div class="font-bold text-blue-600">AI Assistant</div>
@@ -14,6 +52,7 @@
             <div id="chat-messages"></div>
         </div>
         
+        <!-- Input Area -->
         <div class="flex">
             <input type="text" id="user-input" placeholder="Type your message here..." 
                    class="border rounded-l py-2 px-4 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -39,6 +78,72 @@
             const sendBtn = document.getElementById('send-btn');
             const chatContainer = document.getElementById('chat-container');
             const loadingIndicator = document.getElementById('loading-indicator');
+            const useNotion = document.getElementById('use-notion');
+            const notionOptions = document.getElementById('notion-options');
+            const refreshIndexesBtn = document.getElementById('refresh-indexes');
+            
+            // Chat history for context
+            let chatHistory = [];
+            
+            // Toggle Notion options visibility
+            useNotion.addEventListener('change', function() {
+                notionOptions.classList.toggle('hidden', !this.checked);
+            });
+            
+            // Refresh available Notion indexes
+            refreshIndexesBtn.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/chatbot/available-indexes');
+                    const data = await response.json();
+                    
+                    const container = document.getElementById('notion-indexes-container');
+                    
+                    // Clear current options
+                    container.innerHTML = '';
+                    
+                    if (data.indexes && data.indexes.length > 0) {
+                        data.indexes.forEach(index => {
+                            const div = document.createElement('div');
+                            div.className = 'flex items-center mb-1';
+                            
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.id = `notion-${index.id}`;
+                            checkbox.className = 'notion-index-checkbox mr-2';
+                            checkbox.value = index.id;
+                            
+                            const label = document.createElement('label');
+                            label.htmlFor = `notion-${index.id}`;
+                            label.className = 'text-sm';
+
+                            const titleSpan = document.createElement('span');
+                            titleSpan.className = 'font-medium';
+                            titleSpan.textContent = index.title;
+
+                            const typeSpan = document.createElement('span');
+                            typeSpan.className = 'text-xs text-gray-500';
+                            typeSpan.textContent = ` (${index.type})`;
+                            
+                            label.appendChild(titleSpan);
+                            label.appendChild(typeSpan);
+                            
+                            div.appendChild(checkbox);
+                            div.appendChild(label);
+                            container.appendChild(div);
+                        });
+                    } else {
+                        container.innerHTML = `
+                            <p class="text-sm text-gray-500">No cached Notion content available. 
+                               <a href="/files" class="text-blue-500 hover:underline">
+                                  Add some in the File Management page.
+                               </a>
+                            </p>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Error refreshing indexes:', error);
+                }
+            });
             
             function addMessage(sender, text, isAi = false) {
                 const messageDiv = document.createElement('div');
@@ -57,6 +162,17 @@
                 
                 chatMessages.appendChild(messageDiv);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Update chat history for context
+                chatHistory.push({
+                    role: isAi ? 'assistant' : 'user',
+                    content: text
+                });
+                
+                // Limit history to last 10 messages to avoid token limits
+                if (chatHistory.length > 10) {
+                    chatHistory = chatHistory.slice(chatHistory.length - 10);
+                }
             }
             
             async function handleUserInput() {
@@ -73,6 +189,16 @@
                 loadingIndicator.classList.remove('hidden');
                 sendBtn.disabled = true;
                 
+                // Get selected Notion indexes if enabled
+                const useNotionContent = useNotion.checked;
+                let notionIds = [];
+                
+                if (useNotionContent) {
+                    document.querySelectorAll('.notion-index-checkbox:checked').forEach(checkbox => {
+                        notionIds.push(checkbox.value);
+                    });
+                }
+                
                 try {
                     // Call the backend API
                     const response = await fetch('/chatbot/query', {
@@ -80,13 +206,27 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ query: userText })
+                        body: JSON.stringify({
+                            query: userText,
+                            use_notion: useNotionContent,
+                            notion_ids: notionIds,
+                            chat_history: chatHistory.slice(0, -1) // Exclude the current message
+                        })
                     });
                     
                     const data = await response.json();
                     
                     // Add bot response
                     addMessage('AI Assistant', data.response, true);
+                    
+                    // Indicate that Notion content was used
+                    if (data.used_notion) {
+                        const usedNotionIds = data.notion_ids_used.length > 0 
+                            ? data.notion_ids_used.join(', ') 
+                            : 'all available';
+                            
+                        console.log(`Used Notion content: ${usedNotionIds}`);
+                    }
                 } catch (error) {
                     console.error('Error:', error);
                     addMessage('AI Assistant', 'Sorry, there was an error processing your request.', true);

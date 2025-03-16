@@ -1,16 +1,78 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
+{% block title %}Llog - Home{% endblock %}
 {% block content %}
-    <h1 class="text-3xl font-bold mb-4">{% block title %}Welcome to your Flask app!{% endblock %}</h1>
-    
-    <p class="mb-4">This application allows you to upload files to Google Cloud Storage.</p>
-    
-    <div>
-        <a href="{{ url_for('file_storage.manage_files') }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-            Manage Files
+<section class="py-16 md:py-24">
+  <div class="container mx-auto px-4">
+    <div class="max-w-3xl mx-auto text-center">
+      <div class="inline-block mb-3">
+        <span class="px-3 py-1 text-xs font-medium bg-gray-100 rounded-full">
+          Agentic AI chat assistant
+        </span>
+      </div>
+      
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6">
+        The Ultimate Assisant for Your Notion Files
+      </h1>
+      
+      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+        Upload, manage, and chat with your notion files or databases using our AI assistant.
+      </p>
+      
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <a href="{{ url_for('file_storage.manage_files') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-md transition-colors w-full sm:w-auto text-center">
+          Manage Files
         </a>
-        <a href="{{ url_for('chatbot.chatbot_page') }}" class="inline-block bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">
-            Try our AI Assistant
+        <a href="{{ url_for('chatbot.chatbot_page') }}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-md transition-colors w-full sm:w-auto text-center">
+          Try AI Assistant
         </a>
+      </div>
     </div>
+  </div>
+</section>
+
+<section class="py-16 bg-gray-100">
+  <div class="container mx-auto px-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Feature 1 -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 flex items-center justify-center rounded-md bg-blue-50 text-blue-500 mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Secure Storage</h3>
+        <p class="text-gray-600">Your files are encrypted and securely stored in Google Cloud Storage with industry-leading security measures.</p>
+      </div>
+      
+      <!-- Feature 2 -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 flex items-center justify-center rounded-md bg-blue-50 text-blue-500 mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium mb-2">Easy Uploads</h3>
+        <p class="text-gray-600">A dedicated upload page allows you to easily upload files or databases of notion to be used by the AI assistant.</p>
+      </div>
+      
+      <!-- Feature 3 -->
+      <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 flex items-center justify-center rounded-md bg-blue-50 text-blue-500 mb-4">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 18H12.01M7 21H17C18.1046 21 19 20.1046 19 19V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V19C5 20.1046 5.89543 21 7 21Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 7H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M9 11H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-medium mb-2">AI Assistant</h3>
+        <p class="text-gray-600"> A powerful AI agentic assistant that can answer questions, summarize content, and provide insights based on your files.</p>
+      </div>
+    </div>
+  </div>
+</section>
 {% endblock %}

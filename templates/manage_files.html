@@ -1,73 +1,269 @@
 {% extends 'base.html' %}
 
+{% block title %}Notion Content Cache{% endblock %}
+
 {% block content %}
-    <h1 class="text-3xl font-bold mb-4">{% block title %}File Management{% endblock %}</h1>
+<div class="py-8">
+    <h1 class="text-4xl font-bold mb-6 text-gray-900">Notion Content Cache</h1>
     
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
-                <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-4">
+                <div class="bg-gray-100 border-l-4 border-gray-500 text-gray-700 p-4 mb-6 rounded">
                     {{ message }}
                 </div>
             {% endfor %}
         {% endif %}
     {% endwith %}
     
-    <!-- Upload Section -->
-    <div class="bg-white p-4 rounded border mb-6">
-        <h2 class="text-2xl font-bold mb-4">Upload Files</h2>
-        <form method="POST" action="{{ url_for('file_storage.upload_file') }}" enctype="multipart/form-data" class="mb-4">
-            <div class="mb-4">
-                <label for="file" class="block text-gray-700 font-bold mb-2">Select file to upload:</label>
-                <input type="file" name="file" id="file" class="border border-gray-300 p-2 w-full rounded">
+    <!-- Notion Page Caching Section -->
+    <div class="bg-white p-6 rounded-lg border shadow-sm mb-8">
+        <div class="mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">Cache Notion Content</h2>
+            <p class="text-gray-600 mt-1">
+                Cache Notion pages or databases to create embeddings for faster LLM queries.
+                This helps avoid slow Notion API calls during conversations with the AI.
+            </p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('file_storage.cache_notion_page') }}" id="notion-form">
+            <!-- Input Mode Selection -->
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex rounded-lg border bg-gray-50 p-1">
+                    <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                        <input type="radio" name="input_type" value="database" class="sr-only" {% if not request.form.get('page_id') %}checked{% endif %} 
+                               onclick="toggleInputMode('database')">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"/>
+                            <path d="M4 12h16"/>
+                            <path d="M12 4v16"/>
+                        </svg>
+                        <span>Database</span>
+                    </label>
+                    <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                        <input type="radio" name="input_type" value="page" class="sr-only" {% if request.form.get('page_id') %}checked{% endif %}
+                               onclick="toggleInputMode('page')">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span>Single Page</span>
+                    </label>
+                </div>
             </div>
-            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                Upload
-            </button>
+            
+            <div class="space-y-6"> 
+                <!-- Database Input Section -->
+                <div id="database-section" class="space-y-4 {% if request.form.get('page_id') %}hidden{% endif %}">
+                    <h3 class="font-semibold text-lg mb-2 text-gray-700">Database Option</h3>
+                    <div>
+                        <label for="database_id" class="block text-gray-700 font-medium mb-1">
+                            Notion Database ID:
+                        </label>
+                        <input
+                            type="text"
+                            id="database_id"
+                            name="database_id"
+                            placeholder="e.g., dc89fddeb09148639940a75e7759b8bc"
+                            value="{{ request.form.get('database_id', '') }}"
+                            class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                        >
+                        <p class="text-sm text-gray-500 mt-1">
+                            Enter the Notion database ID to cache all its pages.
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Find it in the database URL: notion.so/<span class="font-medium">dc89fddeb09148639940a75e7759b8bc</span>?v=...
+                        </p>
+                    </div>
+                    <div class="bg-gray-100 p-3 rounded-md border border-gray-200">
+                        <p class="text-sm text-gray-700">
+                            💡 <strong>Recommended:</strong> For best results, use the database ID to cache all related pages at once.
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Single Page Input Section -->
+                <div id="page-section" class="space-y-4 {% if not request.form.get('page_id') %}hidden{% endif %}">
+                    <h3 class="font-semibold text-lg mb-2 text-gray-700">Single Page Option</h3>
+                    <div>
+                        <label for="page_id" class="block text-gray-700 font-medium mb-1">
+                            Notion Page ID:
+                        </label>
+                        <input
+                            type="text"
+                            id="page_id"
+                            name="page_id"
+                            placeholder="e.g., 9917363395904835a604ca7a6a358579"
+                            value="{{ request.form.get('page_id', '') }}"
+                            class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                        >
+                        <p class="text-sm text-gray-500 mt-1">
+                            Enter a single page ID to cache just that page.
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Find it in the page URL: notion.so/pagename-<span class="font-medium">9917363395904835a604ca7a6a358579</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="mt-6 text-center">
+                <button 
+                    type="submit" 
+                    id="cache-button" 
+                    class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    Cache Notion Content
+                </button>
+                <span id="processing-status" class="hidden ml-3 text-gray-600"></span>
+            </div>
         </form>
     </div>
     
-    <!-- Files List Section -->
-    <div class="bg-white p-4 rounded border">
-        <h2 class="text-2xl font-bold mb-4">Files in {{ bucket_name }}</h2>
+    <!-- Cached Notion Content Section -->
+    <div class="bg-white p-6 rounded-lg border shadow-sm mb-8">
+        <div class="mb-4">
+            <h2 class="text-2xl font-bold">
+                {% if notion_indexes %}
+                    Cached Notion Content
+                {% else %}
+                    No Cached Notion Content
+                {% endif %}
+            </h2>
+            
+            {% if notion_indexes %}
+                <p class="text-gray-600 mt-1">
+                    These cached Notion pages are available for use with the AI assistant.
+                    Select them in the chatbot interface to provide context for your conversations.
+                </p>
+            {% endif %}
+        </div>
         
-        {% if files %}
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b">
-                        <th class="text-left p-2">File Name</th>
-                        <th class="text-left p-2">Size</th>
-                        <th class="text-left p-2">Last Updated</th>
-                        <th class="text-left p-2">Type</th>
-                        <th class="text-left p-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for file in files %}
-                    <tr class="border-b hover:bg-gray-50">
-                        <td class="p-2">{{ file.name }}</td>
-                        <td class="p-2">{{ (file.size / 1024) | round(2) }} KB</td>
-                        <td class="p-2">{{ file.updated.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                        <td class="p-2">{{ file.content_type }}</td>
-                        <td class="p-2">
-                            <form method="POST" action="{{ url_for('file_storage.delete_file', filename=file.name) }}" onsubmit="return confirm('Are you sure you want to delete this file?');">
-                                <button type="submit" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-sm">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        {% if notion_indexes %}
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-3 text-left text-gray-900 font-medium">Title</th>
+                            <th class="px-4 py-3 text-left text-gray-900 font-medium">Type</th>
+                            <th class="px-4 py-3 text-left text-gray-900 font-medium">ID</th>
+                            <th class="px-4 py-3 text-left text-gray-900 font-medium">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {% for index in notion_indexes %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 font-medium text-gray-900">{{ index.title }}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center rounded-full {% if index.type == 'database' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-800{% endif %} px-2 py-1 text-xs font-medium">
+                                    {{ index.type | capitalize }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-xs text-gray-500 font-mono truncate max-w-[200px]">
+                                {{ index.id }}
+                            </td>
+                            <td class="px-4 py-3">
+                                <form method="POST" action="{{ url_for('file_storage.delete_file', filename=index.path) }}" 
+                                      onsubmit="return confirm('Are you sure you want to delete this cached Notion content?');">
+                                    <button type="submit" class="inline-flex items-center justify-center rounded-md bg-red-600 px-3 py-1 text-xs text-white font-medium shadow-sm hover:bg-red-700">
+                                        Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p>No files found in the bucket.</p>
+            <p class="text-gray-700">
+                You haven't cached any Notion pages yet. Add a page using the form above to get started.
+            </p>
         {% endif %}
     </div>
     
-    <div class="mt-6">
-        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+    <!-- Navigation Buttons -->
+    <div class="flex gap-4 mb-6">
+        <a href="{{ url_for('main.home') }}" 
+           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             Back to Home
         </a>
+        <a href="{{ url_for('chatbot.chatbot_page') }}" 
+           class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Go to AI Assistant
+        </a>
     </div>
+</div>
+
+<!-- Script for handling form submission and UI feedback -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cacheButton = document.getElementById('cache-button');
+        const notionForm = document.getElementById('notion-form');
+        const processingStatus = document.getElementById('processing-status');
+        const pageIdInput = document.getElementById('page_id');
+        const databaseIdInput = document.getElementById('database_id');
+        
+        if (notionForm) {
+            notionForm.addEventListener('submit', function(e) {
+                // Validate that at least one ID is provided
+                const pageId = pageIdInput.value.trim();
+                const databaseId = databaseIdInput.value.trim();
+                
+                if (!pageId && !databaseId) {
+                    e.preventDefault();
+                    alert('Please enter either a Notion Database ID or Page ID.');
+                    return;
+                }
+                
+                // Show processing status
+                cacheButton.textContent = 'Processing...';
+                cacheButton.disabled = true;
+                cacheButton.classList.add('opacity-75');
+                processingStatus.textContent = 'Caching Notion content (this might take a few minutes)...';
+                processingStatus.classList.remove('hidden');
+                
+                // Set a timeout to reset UI if the server takes too long to respond (5 minutes)
+                window.setTimeout(function() {
+                    // If the page hasn't redirected after 5 minutes, assume something went wrong
+                    processingStatus.textContent = 'The process is taking longer than expected. Check server logs for issues or try refreshing the page.';
+                    processingStatus.classList.add('text-yellow-600');
+                    cacheButton.disabled = false;
+                    cacheButton.classList.remove('opacity-75');
+                    cacheButton.textContent = 'Try Again';
+                }, 300000); // 5 minutes
+            });
+        }
+        
+        // If there's an error message, make sure the button is enabled
+        const flashMessages = document.querySelectorAll('.bg-blue-100, .bg-gray-100');
+        if (flashMessages.length > 0) {
+            if (cacheButton) {
+                cacheButton.disabled = false;
+                cacheButton.textContent = 'Cache Notion Content';
+                cacheButton.classList.remove('opacity-75');
+            }
+        }
+    });
+
+    function toggleInputMode(mode) {
+        const databaseSection = document.getElementById('database-section');
+        const pageSection = document.getElementById('page-section');
+        const databaseLabel = document.getElementById('database-label');
+        const pageLabel = document.getElementById('page-label');
+
+        if (mode === 'database') {
+            databaseSection.classList.remove('hidden');
+            pageSection.classList.add('hidden');
+            databaseLabel.classList.add('bg-white', 'shadow-sm');
+            pageLabel.classList.remove('bg-white', 'shadow-sm');
+        } else {
+            databaseSection.classList.add('hidden');
+            pageSection.classList.remove('hidden');
+            databaseLabel.classList.remove('bg-white', 'shadow-sm');
+            pageLabel.classList.add('bg-white', 'shadow-sm');
+        }
+    }
+</script>
 {% endblock %}

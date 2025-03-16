@@ -2,3 +2,8 @@ flask
 google-cloud-storage
 python-dotenv
 gunicorn
+openai>=1.0.0
+llama-index>=0.8.0
+llama-index-readers-notion>=0.1.0
+notion-client>=2.0.0
+llama-index-llms-openai>=0.1.0
