@@ -89,7 +89,7 @@ gcloud auth configure-docker
 Push the image to Google Container Registry
 
 ```bash
-docker push gcr.io/your-project-id/flask-app
+c
 ```
 
 ### Deploy the image
@@ -108,6 +108,8 @@ gcloud run deploy flask-app `
   --memory=256Mi `
   --concurrency=1 `
 ```
+
+> don't forget to replace `your-project-id`, `your-bucket-name`, `your-secret-key-value` and `your-service-account-email` with your own values and add the missing environment variables with the `--set-env-vars` flag.
 
 p.s you can add a new service account  with the admin role to the project by running the following command:
 
