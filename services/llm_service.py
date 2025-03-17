@@ -10,15 +10,36 @@ from llama_index.core import VectorStoreIndex
 from llama_index.llms.openai import OpenAI
 from services.storage_service import get_storage_client
 from services.notion_service import download_blob_to_memory
+import time
+
+# Cache storage for file indexes
+_file_index_cache = {
+    'data': None,
+    'timestamp': 0
+}
+CACHE_TTL = 300  # Cache time-to-live in seconds (5 minutes)
+
+def _is_cache_valid():
+    """Check if the cache is still valid based on TTL"""
+    return (_file_index_cache['data'] is not None and 
+            time.time() - _file_index_cache['timestamp'] < CACHE_TTL)
 
 def get_available_notion_indexes():
     """
     Get a list of available cached Notion indexes from GCS bucket.
+    Uses an in-memory cache with TTL to avoid frequent GCS requests.
     
     Returns:
         list: List of available index IDs and types with titles
     """
     try:
+        # Check if we have valid cached data
+        if _is_cache_valid():
+            current_app.logger.debug("Returning cached file index list")
+            return _file_index_cache['data']
+
+        current_app.logger.debug("Cache miss or expired, fetching fresh file index list")
+        
         # Get GCS client and bucket
         client = get_storage_client()
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
@@ -36,6 +57,10 @@ def get_available_notion_indexes():
                 blob_name = blob.name
                 if "metadata_db_" in blob_name:
                     item_id = blob_name.split("metadata_db_")[1].replace('.pkl', '')
+                    metadata = download_blob_to_memory(blob_name)
+                    metadata_dict[item_id] = metadata
+                elif "metadata_doc_" in blob_name:
+                    item_id = blob_name.split("metadata_doc_")[1].replace('.pkl', '')
                     metadata = download_blob_to_memory(blob_name)
                     metadata_dict[item_id] = metadata
                 elif "metadata_" in blob_name:
@@ -82,12 +107,49 @@ def get_available_notion_indexes():
                     'title': title,
                     'path': blob_name
                 })
+            elif "vector_document_" in blob_name:
+                item_id = blob_name.split("vector_document_")[1].replace('.pkl', '')
+                
+                # Get title and format from metadata if available
+                title = f"Document: {item_id[:8]}..."
+                doc_type = "document"
+                if item_id in metadata_dict:
+                    if 'title' in metadata_dict[item_id]:
+                        title = metadata_dict[item_id]['title']
+                    if 'format' in metadata_dict[item_id]:
+                        doc_type = metadata_dict[item_id]['format']
+                
+                indexes.append({
+                    'id': item_id,
+                    'type': doc_type,
+                    'title': title,
+                    'path': blob_name
+                })
+        
+        # Update cache with new data
+        _file_index_cache['data'] = indexes
+        _file_index_cache['timestamp'] = time.time()
+        current_app.logger.debug("Updated file index cache")
         
         return indexes
     
     except Exception as e:
         current_app.logger.error(f"Error getting available indexes: {str(e)}")
+        # On error, return cached data if available (even if expired), otherwise empty list
+        if _file_index_cache['data'] is not None:
+            current_app.logger.warning("Returning stale cache data due to error")
+            return _file_index_cache['data']
         return []
+
+def refresh_file_index_cache():
+    """
+    Force a refresh of the file index cache.
+    Call this after adding or deleting files.
+    """
+    global _file_index_cache
+    _file_index_cache['data'] = None
+    _file_index_cache['timestamp'] = 0
+    return get_available_notion_indexes()
 
 def query_notion_content(query: str, index_ids: List[str] = None) -> Dict[str, Any]:
     """
@@ -105,7 +167,7 @@ def query_notion_content(query: str, index_ids: List[str] = None) -> Dict[str, A
         available_indexes = get_available_notion_indexes()
         
         if not available_indexes:
-            return {"error": "No cached Notion content found"}
+            return {"error": "No cached content found"}
         
         # Filter indexes if specific ones requested
         if index_ids:
@@ -149,7 +211,7 @@ def query_notion_content(query: str, index_ids: List[str] = None) -> Dict[str, A
         }
     
     except Exception as e:
-        current_app.logger.error(f"Error querying Notion content: {str(e)}")
+        current_app.logger.error(f"Error querying cached content: {str(e)}")
         return {"error": str(e)}
 
 def get_llm_response(query: str, context: Optional[Dict[str, Any]] = None) -> str:
@@ -159,8 +221,8 @@ def get_llm_response(query: str, context: Optional[Dict[str, Any]] = None) -> st
     Args:
         query (str): The user's question or prompt
         context (dict, optional): Additional context for the query
-            - use_notion (bool): Whether to search cached Notion content
-            - notion_ids (list): Specific Notion page/database IDs to search
+            - use_notion (bool): Whether to search cached content
+            - notion_ids (list): Specific cached content IDs to search
         
     Returns:
         str: The LLM's response
@@ -172,25 +234,35 @@ def get_llm_response(query: str, context: Optional[Dict[str, Any]] = None) -> st
         # Prepare messages for the LLM
         messages = []
         
-        # Check if we should use Notion content
-        notion_context = ""
+        # Check if we should use cached content
+        cached_context = ""
         if context and context.get('use_notion', False):
             notion_ids = context.get('notion_ids', [])
             
-            # Retrieve relevant information from cached Notion content
-            notion_results = query_notion_content(query, notion_ids)
-            
-            if 'error' not in notion_results and notion_results.get('results'):
-                # Format the Notion results as context
-                notion_context = "Here is relevant information from Notion:\n\n"
-                for i, result in enumerate(notion_results['results'][:5]):  # Limit to top 5 results
-                    notion_context += f"Source {i+1} ({result['source']}):\n{result['content']}\n\n"
+            try:
+                # Retrieve relevant information from cached content
+                notion_results = query_notion_content(query, notion_ids)
                 
-                # Add notion context to system prompt
-                system_prompt += f"\n\nUse the following information from Notion to answer the query:\n{notion_context}"
-                
-                # Log that we're using Notion content
-                current_app.logger.info(f"Using {len(notion_results['results'])} Notion results for context")
+                if 'error' not in notion_results and notion_results.get('results'):
+                    # Format the results as context
+                    cached_context = "Here is relevant information from your documents:\n\n"
+                    for i, result in enumerate(notion_results['results'][:5]):  # Limit to top 5 results
+                        cached_context += f"Source {i+1} ({result['source']}):\n{result['content']}\n\n"
+                    
+                    # Add context to system prompt
+                    system_prompt += f"\n\nUse the following information from documents to answer the query:\n{cached_context}"
+                    
+                    # Log that we're using cached content
+                    current_app.logger.info(f"Using {len(notion_results['results'])} cached results for context")
+            except Exception as e:
+                error_msg = str(e)
+                if "validation_error" in error_msg and "ai_block" in error_msg:
+                    current_app.logger.error(f"Notion API validation error: AI blocks not supported: {error_msg}")
+                    return "I couldn't access some of your Notion content because it contains AI blocks that aren't supported via the API. Please try using a different Notion page or database that doesn't contain AI blocks."
+                else:
+                    current_app.logger.error(f"Error retrieving Notion context: {error_msg}")
+                    # Continue without context but don't fail completely
+                    system_prompt += "\n\nNote: I tried to access your Notion content but encountered an error."
         
         # Add system message with context
         messages.append({"role": "system", "content": system_prompt})

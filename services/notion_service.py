@@ -72,7 +72,7 @@ def extract_notion_page_title(page_id, documents=None):
         current_app.logger.error(f"Error extracting Notion page title: {str(e)}")
         return f"Notion Page {page_id[:8]}..."
 
-def cache_notion_page(page_id):
+def cache_notion_page(page_id, custom_name=None):
     """Cache a single Notion page in Google Cloud Storage bucket."""
     start_time = time.time()
     try:
@@ -89,15 +89,27 @@ def cache_notion_page(page_id):
             documents = reader.load_data(page_ids=[page_id])
             current_app.logger.info(f"Successfully loaded page content from Notion API")
         except Exception as e:
-            current_app.logger.error(f"Error loading Notion page: {str(e)}")
-            raise ValueError(f"Failed to fetch content from Notion: {str(e)}")
+            error_msg = str(e)
+            if "validation_error" in error_msg:
+                current_app.logger.error(f"Validation error loading page {page_id}: {error_msg}")
+                if "ai_block" in error_msg:
+                    raise ValueError(f"The provided page ID ({page_id}) cannot be accessed because it contains AI blocks that are not supported via the API. Please use a page without AI blocks.")
+                else:
+                    raise ValueError(f"The provided page ID ({page_id}) appears to be invalid: {error_msg}")
+            else:
+                current_app.logger.error(f"Error loading Notion page: {error_msg}")
+                raise ValueError(f"Failed to fetch content from Notion: {error_msg}")
         
         if not documents:
             raise ValueError("No content found in the specified Notion page")
         
-        # Extract page title
-        page_title = extract_notion_page_title(page_id, documents)
-        current_app.logger.info(f"Extracted page title: {page_title}")
+        # Extract page title or use custom name if provided
+        if custom_name and custom_name.strip():
+            page_title = custom_name.strip()
+            current_app.logger.info(f"Using custom page title: {page_title}")
+        else:
+            page_title = extract_notion_page_title(page_id, documents)
+            current_app.logger.info(f"Extracted page title: {page_title}")
         
         # Get GCS client and bucket
         current_app.logger.info(f"Getting storage client")
@@ -177,22 +189,51 @@ def cache_notion_page(page_id):
         current_app.logger.error(f"Error caching Notion page after {elapsed_time:.2f} seconds: {str(e)}")
         raise
 
-def cache_notion_database(database_id):
+def cache_notion_database(database_id, custom_name=None):
     """Cache all pages in a Notion database to Google Cloud Storage bucket as a single unified index."""
     start_time = time.time()
     try:
         current_app.logger.info(f"Starting to cache Notion database {database_id}")
         notion = get_notion_client()
         
-        # Try to get database title
-        database = notion.databases.retrieve(database_id)
-        database_title = "Unknown Database"
-        if 'title' in database:
-            title_parts = [rich_text.get('plain_text', '') for rich_text in database['title']]
-            database_title = ''.join(title_parts) or f"Notion DB {database_id[:8]}..."
+        # Try to get database title or use custom name if provided
+        try:
+            database = notion.databases.retrieve(database_id)
+            
+            if custom_name and custom_name.strip():
+                database_title = custom_name.strip()
+                current_app.logger.info(f"Using custom database title: {database_title}")
+            else:
+                database_title = "Unknown Database"
+                if 'title' in database:
+                    title_parts = [rich_text.get('plain_text', '') for rich_text in database['title']]
+                    database_title = ''.join(title_parts) or f"Notion DB {database_id[:8]}..."
+                current_app.logger.info(f"Using database title from Notion: {database_title}")
+        except Exception as e:
+            error_msg = str(e)
+            if "validation_error" in error_msg:
+                current_app.logger.error(f"Validation error with database ID {database_id}: {error_msg}")
+                if "ai_block" in error_msg:
+                    raise ValueError(f"The provided database ID ({database_id}) cannot be accessed because it contains AI blocks that are not supported via the API. Please use a database without AI blocks.")
+                else:
+                    raise ValueError(f"The provided database ID ({database_id}) appears to be invalid: {error_msg}")
+            else:
+                raise
         
         # Query the database for all pages
-        results = notion.databases.query(database_id=database_id).get("results", [])
+        try:
+            results = notion.databases.query(database_id=database_id).get("results", [])
+        except Exception as e:
+            error_msg = str(e)
+            if "validation_error" in error_msg:
+                current_app.logger.error(f"Validation error querying database {database_id}: {error_msg}")
+                if "ai_block" in error_msg:
+                    raise ValueError(f"The provided database ID ({database_id}) cannot be accessed because it contains AI blocks that are not supported via the API. Please use a database without AI blocks.")
+                else:
+                    raise ValueError(f"The provided database ID ({database_id}) appears to be invalid: {error_msg}")
+            else:
+                raise
+                
         if not results:
             raise ValueError("No pages found in the specified Notion database")
         
@@ -205,7 +246,16 @@ def cache_notion_database(database_id):
         
         # Load all documents from the database with a single call
         current_app.logger.info(f"Loading content from all {len(page_ids)} pages in database")
-        all_documents = reader.load_data(page_ids=page_ids)
+        try:
+            all_documents = reader.load_data(page_ids=page_ids)
+        except Exception as e:
+            error_msg = str(e)
+            if "validation_error" in error_msg and "ai_block" in error_msg:
+                current_app.logger.error(f"AI block error loading database pages: {error_msg}")
+                raise ValueError(f"One or more pages in the database contains AI blocks that are not supported via the API. Please use a database without AI blocks.")
+            else:
+                current_app.logger.error(f"Error loading Notion database pages: {error_msg}")
+                raise ValueError(f"Failed to fetch content from Notion database: {error_msg}")
         
         if not all_documents:
             raise ValueError("No content found in the specified Notion database pages")

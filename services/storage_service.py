@@ -47,14 +47,55 @@ def upload_file_to_storage(file):
     
     return True
 
-def delete_file_from_storage(filename):
-    """Delete a file from the storage bucket."""
-    client = get_storage_client()
-    bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
-    bucket = client.bucket(bucket_name)
-    
-    # Get the blob and delete it
-    blob = bucket.blob(filename)
-    blob.delete()
-    
-    return True
+def delete_file_from_storage(file_id):
+    """Delete all related files associated with an index ID."""
+    try:
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        bucket = client.bucket(bucket_name)
+        
+        # Determine the file type by the ID format
+        current_app.logger.info(f"Attempting to delete content with ID: {file_id}")
+        
+        # Look for all possible file patterns for this ID
+        patterns = [
+            f"cache/metadata_{file_id}.pkl",
+            f"cache/metadata_db_{file_id}.pkl",
+            f"cache/metadata_doc_{file_id}.pkl",
+            f"cache/notion_data_{file_id}.pkl",
+            f"cache/notion_database_{file_id}.pkl",
+            f"cache/document_data_{file_id}.pkl",
+            f"cache/vector_index_{file_id}.pkl",
+            f"cache/vector_database_{file_id}.pkl",
+            f"cache/vector_document_{file_id}.pkl"
+        ]
+        
+        deleted = False
+        for pattern in patterns:
+            try:
+                blob = bucket.blob(pattern)
+                if blob.exists():
+                    blob.delete()
+                    current_app.logger.info(f"Deleted file {pattern}")
+                    deleted = True
+            except Exception as e:
+                current_app.logger.warning(f"Could not delete {pattern}: {str(e)}")
+        
+        if not deleted:
+            # If no files matched our patterns, try direct path deletion as fallback
+            try:
+                blob = bucket.blob(file_id)
+                if blob.exists():
+                    blob.delete()
+                    current_app.logger.info(f"Deleted file using direct path: {file_id}")
+                    deleted = True
+            except Exception as e:
+                current_app.logger.error(f"Could not delete file using direct path {file_id}: {str(e)}")
+        
+        if not deleted:
+            raise ValueError(f"No files found to delete for ID: {file_id}")
+        
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Error in delete_file_from_storage: {str(e)}")
+        raise

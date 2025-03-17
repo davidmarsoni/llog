@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Content{% endblock %}
+
+{% block content %}
+<div class="py-8">
+    <h1 class="text-4xl font-bold mb-6 text-gray-900">Add Content</h1>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="bg-gray-100 border-l-4 border-gray-500 text-gray-700 p-4 mb-6 rounded">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Tabbed Interface for Caching Options -->
+    <div class="mb-8">
+        <div class="border-b border-gray-200">
+            <ul class="flex -mb-px">
+                <li class="mr-2">
+                    <button class="tab-button active py-2 px-4 text-blue-600 border-b-2 border-blue-600 font-medium" 
+                            onclick="showTab('notion-tab')">
+                        Notion Content
+                    </button>
+                </li>
+                <li class="mr-2">
+                    <button class="tab-button py-2 px-4 text-gray-500 hover:text-gray-700 font-medium"
+                            onclick="showTab('document-tab')">
+                        Document Upload
+                    </button>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Notion Tab Content -->
+        <div id="notion-tab" class="tab-content bg-white p-6 rounded-lg border shadow-sm mt-2">
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Cache Notion Content</h2>
+                <p class="text-gray-600 mt-1">
+                    Cache Notion pages or databases to create embeddings for faster LLM queries.
+                    This helps avoid slow Notion API calls during conversations with the AI.
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('file_storage.cache_notion_page') }}" id="notion-form">
+                <!-- Input Mode Selection -->
+                <div class="flex justify-center mb-6">
+                    <div class="inline-flex rounded-lg border bg-gray-50 p-1">
+                        <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                            <input type="radio" name="input_type" value="database" class="sr-only" {% if not request.form.get('page_id') %}checked{% endif %} 
+                                   onclick="toggleInputMode('database')">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"/>
+                                <path d="M4 12h16"/>
+                                <path d="M12 4v16"/>
+                            </svg>
+                            <span>Database</span>
+                        </label>
+                        <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                            <input type="radio" name="input_type" value="page" class="sr-only" {% if request.form.get('page_id') %}checked{% endif %}
+                                   onclick="toggleInputMode('page')">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            <span>Single Page</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="space-y-6"> 
+                    <!-- Database Input Section -->
+                    <div id="database-section" class="space-y-4 {% if request.form.get('page_id') %}hidden{% endif %}">
+                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Database Option</h3>
+                        <div>
+                            <label for="database_id" class="block text-gray-700 font-medium mb-1">
+                                Notion Database ID:
+                            </label>
+                            <input
+                                type="text"
+                                id="database_id"
+                                name="database_id"
+                                placeholder="e.g., dc89fddeb09148639940a75e7759b8bc"
+                                value="{{ request.form.get('database_id', '') }}"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                            <p class="text-sm text-gray-500 mt-1">
+                                Enter the Notion database ID to cache all its pages.
+                            </p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Find it in the database URL: notion.so/<span class="font-medium">dc89fddeb09148639940a75e7759b8bc</span>?v=...
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="db_custom_name" class="block text-gray-700 font-medium mb-1">
+                                Custom Database Name (Optional):
+                            </label>
+                            <input
+                                type="text"
+                                id="db_custom_name"
+                                name="custom_name"
+                                placeholder="e.g., My Project Documentation"
+                                value="{{ request.form.get('custom_name', '') }}"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                            <p class="text-sm text-gray-500 mt-1">
+                                Provide a custom name for this database (defaults to the name from Notion if left blank).
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Single Page Input Section -->
+                    <div id="page-section" class="space-y-4 {% if not request.form.get('page_id') %}hidden{% endif %}">
+                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Single Page Option</h3>
+                        <div>
+                            <label for="page_id" class="block text-gray-700 font-medium mb-1">
+                                Notion Page ID:
+                            </label>
+                            <input
+                                type="text"
+                                id="page_id"
+                                name="page_id"
+                                placeholder="e.g., 9917363395904835a604ca7a6a358579"
+                                value="{{ request.form.get('page_id', '') }}"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                            <p class="text-sm text-gray-500 mt-1">
+                                Enter a single page ID to cache just that page.
+                            </p>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Find it in the page URL: notion.so/pagename-<span class="font-medium">9917363395904835a604ca7a6a358579</span>
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <label for="page_custom_name" class="block text-gray-700 font-medium mb-1">
+                                Custom Page Name (Optional):
+                            </label>
+                            <input
+                                type="text"
+                                id="page_custom_name"
+                                name="custom_name" 
+                                placeholder="e.g., Project Requirements"
+                                value="{{ request.form.get('custom_name', '') }}"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                            <p class="text-sm text-gray-500 mt-1">
+                                Provide a custom name for this page (defaults to the page title from Notion if left blank).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="mt-6 text-center">
+                    <button 
+                        type="submit" 
+                        id="cache-button" 
+                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        Cache Notion Content
+                    </button>
+                    <span id="processing-status" class="hidden ml-3 text-gray-600"></span>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Document Upload Tab Content -->
+        <div id="document-tab" class="tab-content hidden bg-white p-6 rounded-lg border shadow-sm mt-2">
+            <div class="mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Upload Document</h2>
+                <p class="text-gray-600 mt-1">
+                    Upload PDF, Markdown, or text files to create embeddings for faster LLM queries.
+                    The contents will be extracted, chunked, and used to provide context for AI responses.
+                </p>
+            </div>
+            
+            <form method="POST" action="{{ url_for('file_storage.upload_document') }}" enctype="multipart/form-data" id="document-form">
+                <div class="space-y-6">
+                    <!-- File Upload Section -->
+                    <div>
+                        <label for="document" class="block text-gray-700 font-medium mb-1">
+                            Select Document:
+                        </label>
+                        <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
+                                </svg>
+                                <div class="mt-4 flex text-sm leading-6 text-gray-600">
+                                    <label for="document" class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500">
+                                        <span>Upload a file</span>
+                                        <input id="document" name="document" type="file" class="sr-only" accept=".pdf,.txt,.md" onchange="updateFileName()">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p id="file-name" class="text-xs leading-5 text-gray-600 mt-1">PDF, TXT, or MD up to 20MB</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Name Input -->
+                    <div>
+                        <label for="document_name" class="block text-gray-700 font-medium mb-1">
+                            Custom Document Name (Optional):
+                        </label>
+                        <input
+                            type="text"
+                            id="document_name"
+                            name="document_name"
+                            placeholder="e.g., Project Specifications"
+                            class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                        >
+                        <p class="text-sm text-gray-500 mt-1">
+                            Provide a custom name for this document (defaults to filename if left blank).
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="mt-6 text-center">
+                    <button 
+                        type="submit" 
+                        id="upload-button" 
+                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        Upload and Process Document
+                    </button>
+                    <span id="upload-status" class="hidden ml-3 text-gray-600"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="flex gap-4 mb-6">
+        <a href="{{ url_for('file_storage.view_files') }}" 
+           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            View Cached Content
+        </a>
+        <a href="{{ url_for('main.home') }}" 
+           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Back to Home
+        </a>
+        <a href="{{ url_for('chatbot.chatbot_page') }}" 
+           class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Go to AI Assistant
+        </a>
+    </div>
+</div>
+
+<!-- Script for handling form submission and UI feedback -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const cacheButton = document.getElementById('cache-button');
+        const notionForm = document.getElementById('notion-form');
+        const processingStatus = document.getElementById('processing-status');
+        const pageIdInput = document.getElementById('page_id');
+        const databaseIdInput = document.getElementById('database_id');
+        const pageCustomNameInput = document.getElementById('page_custom_name');
+        const dbCustomNameInput = document.getElementById('db_custom_name');
+        
+        // Document upload form elements
+        const uploadButton = document.getElementById('upload-button');
+        const documentForm = document.getElementById('document-form');
+        const uploadStatus = document.getElementById('upload-status');
+        const documentInput = document.getElementById('document');
+        
+        if (notionForm) {
+            notionForm.addEventListener('submit', function(e) {
+                // Validate that at least one ID is provided
+                const pageId = pageIdInput.value.trim();
+                const databaseId = databaseIdInput.value.trim();
+                
+                if (!pageId && !databaseId) {
+                    e.preventDefault();
+                    alert('Please enter either a Notion Database ID or Page ID.');
+                    return;
+                }
+                
+                // Show processing status
+                cacheButton.textContent = 'Processing...';
+                cacheButton.disabled = true;
+                cacheButton.classList.add('opacity-75');
+                processingStatus.textContent = 'Caching Notion content (this might take a few minutes)...';
+                processingStatus.classList.remove('hidden');
+                
+                // Set a timeout to reset UI if the server takes too long to respond (5 minutes)
+                window.setTimeout(function() {
+                    // If the page hasn't redirected after 5 minutes, assume something went wrong
+                    processingStatus.textContent = 'The process is taking longer than expected. Check server logs for issues or try refreshing the page.';
+                    processingStatus.classList.add('text-yellow-600');
+                    cacheButton.disabled = false;
+                    cacheButton.classList.remove('opacity-75');
+                    cacheButton.textContent = 'Try Again';
+                }, 300000); // 5 minutes
+            });
+        }
+        
+        if (documentForm) {
+            documentForm.addEventListener('submit', function(e) {
+                // Validate that a file is selected
+                if (!documentInput.files || documentInput.files.length === 0) {
+                    e.preventDefault();
+                    alert('Please select a file to upload.');
+                    return;
+                }
+                
+                // Show processing status
+                uploadButton.textContent = 'Processing...';
+                uploadButton.disabled = true;
+                uploadButton.classList.add('opacity-75');
+                uploadStatus.textContent = 'Processing document (this might take a few minutes)...';
+                uploadStatus.classList.remove('hidden');
+                
+                // Set a timeout to reset UI if the server takes too long to respond (5 minutes)
+                window.setTimeout(function() {
+                    // If the page hasn't redirected after 5 minutes, assume something went wrong
+                    uploadStatus.textContent = 'The process is taking longer than expected. Check server logs for issues or try refreshing the page.';
+                    uploadStatus.classList.add('text-yellow-600');
+                    uploadButton.disabled = false;
+                    uploadButton.classList.remove('opacity-75');
+                    uploadButton.textContent = 'Try Again';
+                }, 300000); // 5 minutes
+            });
+        }
+        
+        // If there's an error message, make sure the buttons are enabled
+        const flashMessages = document.querySelectorAll('.bg-blue-100, .bg-gray-100');
+        if (flashMessages.length > 0) {
+            if (cacheButton) {
+                cacheButton.disabled = false;
+                cacheButton.textContent = 'Cache Notion Content';
+                cacheButton.classList.remove('opacity-75');
+            }
+            if (uploadButton) {
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Upload and Process Document';
+                uploadButton.classList.remove('opacity-75');
+            }
+        }
+    });
+
+    function toggleInputMode(mode) {
+        const databaseSection = document.getElementById('database-section');
+        const pageSection = document.getElementById('page-section');
+        const databaseLabel = document.getElementById('database-label');
+        const pageLabel = document.getElementById('page-label');
+
+        if (mode === 'database') {
+            databaseSection.classList.remove('hidden');
+            pageSection.classList.add('hidden');
+            databaseLabel.classList.add('bg-white', 'shadow-sm');
+            pageLabel.classList.remove('bg-white', 'shadow-sm');
+            
+            // Clear the page fields and set the custom_name field to use the database one
+            document.getElementById('page_id').value = '';
+            document.getElementById('db_custom_name').name = 'custom_name';
+            document.getElementById('page_custom_name').name = 'unused_custom_name';
+        } else {
+            databaseSection.classList.add('hidden');
+            pageSection.classList.remove('hidden');
+            databaseLabel.classList.remove('bg-white', 'shadow-sm');
+            pageLabel.classList.add('bg-white', 'shadow-sm');
+            
+            // Clear the database fields and set the custom_name field to use the page one
+            document.getElementById('database_id').value = '';
+            document.getElementById('page_custom_name').name = 'custom_name';
+            document.getElementById('db_custom_name').name = 'unused_custom_name';
+        }
+    }
+    
+    function showTab(tabId) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(tab => tab.classList.add('hidden'));
+        
+        // Show selected tab content
+        document.getElementById(tabId).classList.remove('hidden');
+        
+        // Update tab button styles
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+            button.classList.add('text-gray-500');
+        });
+        
+        // Highlight active tab button
+        event.currentTarget.classList.remove('text-gray-500');
+        event.currentTarget.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+    }
+    
+    function updateFileName() {
+        const fileInput = document.getElementById('document');
+        const fileNameDisplay = document.getElementById('file-name');
+        
+        if (fileInput.files && fileInput.files.length > 0) {
+            fileNameDisplay.textContent = fileInput.files[0].name;
+        } else {
+            fileNameDisplay.textContent = "PDF, TXT, or MD up to 20MB";
+        }
+    }
+</script>
+{% endblock %}
