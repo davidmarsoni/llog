@@ -176,6 +176,7 @@
                 <p class="text-gray-600 mt-1">
                     Upload PDF, Markdown, or text files to create embeddings for faster LLM queries.
                     The contents will be extracted, chunked, and used to provide context for AI responses.
+                    <span class="text-blue-600 font-medium">Supports files up to 1GB.</span>
                 </p>
             </div>
             
@@ -199,7 +200,33 @@
                                     <p class="pl-1">or drag and drop</p>
                                 </div>
                                 <p id="file-name" class="text-xs leading-5 text-gray-600 mt-1">PDF, TXT, or MD up to 1GB</p>
+                                
+                                <!-- File size indicator -->
+                                <div id="file-size" class="hidden mt-2 text-sm text-blue-600"></div>
                             </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress Section -->
+                    <div id="upload-progress-container" class="hidden">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Upload Progress</span>
+                            <span id="progress-percentage" class="text-sm font-medium text-blue-600">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <p id="progress-status" class="text-xs text-gray-500 mt-1">Preparing upload...</p>
+                    </div>
+                    
+                    <!-- Processing Progress Section -->
+                    <div id="processing-progress-container" class="hidden">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-sm font-medium text-gray-700">Processing</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                            <span id="processing-status" class="text-sm text-gray-600">Extracting content from document...</span>
                         </div>
                     </div>
                     
@@ -269,6 +296,12 @@
         const documentForm = document.getElementById('document-form');
         const uploadStatus = document.getElementById('upload-status');
         const documentInput = document.getElementById('document');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercentage = document.getElementById('progress-percentage');
+        const progressStatus = document.getElementById('progress-status');
+        const progressContainer = document.getElementById('upload-progress-container');
+        const processingContainer = document.getElementById('processing-progress-container');
+        const fileSize = document.getElementById('file-size');
         
         if (notionForm) {
             notionForm.addEventListener('submit', function(e) {
@@ -297,7 +330,7 @@
                     cacheButton.disabled = false;
                     cacheButton.classList.remove('opacity-75');
                     cacheButton.textContent = 'Try Again';
-                }, 3000000); // 5 minutes
+                }, 300000); // 5 minutes
             });
         }
         
@@ -310,22 +343,79 @@
                     return;
                 }
                 
+                // Show upload progress container
+                progressContainer.classList.remove('hidden');
+                
                 // Show processing status
-                uploadButton.textContent = 'Processing...';
+                uploadButton.textContent = 'Uploading...';
                 uploadButton.disabled = true;
                 uploadButton.classList.add('opacity-75');
-                uploadStatus.textContent = 'Processing document (this might take a few minutes)...';
-                uploadStatus.classList.remove('hidden');
+                progressStatus.textContent = 'Starting upload...';
                 
-                // Set a timeout to reset UI if the server takes too long to respond (5 minutes)
-                window.setTimeout(function() {
-                    // If the page hasn't redirected after 5 minutes, assume something went wrong
-                    uploadStatus.textContent = 'The process is taking longer than expected. Check server logs for issues or try refreshing the page.';
-                    uploadStatus.classList.add('text-yellow-600');
+                // Create and configure XMLHttpRequest
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData(documentForm);
+                
+                // Track upload progress
+                xhr.upload.addEventListener('progress', function(event) {
+                    if (event.lengthComputable) {
+                        const percentComplete = Math.round((event.loaded / event.total) * 100);
+                        progressBar.style.width = percentComplete + '%';
+                        progressPercentage.textContent = percentComplete + '%';
+                        
+                        if (percentComplete < 100) {
+                            progressStatus.textContent = `Uploaded ${formatFileSize(event.loaded)} of ${formatFileSize(event.total)}`;
+                        } else {
+                            progressStatus.textContent = 'Upload complete. Processing document...';
+                            // Show processing spinner after upload is complete
+                            processingContainer.classList.remove('hidden');
+                        }
+                    }
+                });
+                
+                // Handle completion
+                xhr.addEventListener('load', function() {
+                    if (xhr.status >= 200 && xhr.status < 400) {
+                        // Success - follow the redirect from the server
+                        window.location.href = xhr.responseURL || xhr.getResponseHeader('Location') || "{{ url_for('file_storage.view_files') }}";
+                    } else {
+                        // Error
+                        progressStatus.textContent = 'Error processing file. Please try again.';
+                        progressStatus.classList.add('text-red-600');
+                        uploadButton.disabled = false;
+                        uploadButton.classList.remove('opacity-75');
+                        uploadButton.textContent = 'Try Again';
+                        alert('Error: ' + (xhr.responseText || 'Server error occurred'));
+                    }
+                });
+                
+                // Handle network errors
+                xhr.addEventListener('error', function() {
+                    progressStatus.textContent = 'Network error. Please check your connection and try again.';
+                    progressStatus.classList.add('text-red-600');
                     uploadButton.disabled = false;
                     uploadButton.classList.remove('opacity-75');
                     uploadButton.textContent = 'Try Again';
-                }, 300000); // 5 minutes
+                });
+                
+                // Handle timeout
+                xhr.addEventListener('timeout', function() {
+                    progressStatus.textContent = 'Request timed out. The file might be too large or the server is busy.';
+                    progressStatus.classList.add('text-red-600');
+                    uploadButton.disabled = false;
+                    uploadButton.classList.remove('opacity-75');
+                    uploadButton.textContent = 'Try Again';
+                });
+                
+                // Configure timeout (10 minutes)
+                xhr.timeout = 600000;
+                
+                // Open and send the request
+                xhr.open('POST', documentForm.action, true);
+                xhr.send(formData);
+                
+                // Prevent the default form submission
+                e.preventDefault();
             });
         }
         
@@ -344,13 +434,12 @@
             }
         }
     });
-
+    
     function toggleInputMode(mode) {
         const databaseSection = document.getElementById('database-section');
         const pageSection = document.getElementById('page-section');
         const databaseLabel = document.getElementById('database-label');
         const pageLabel = document.getElementById('page-label');
-
         if (mode === 'database') {
             databaseSection.classList.remove('hidden');
             pageSection.classList.add('hidden');
@@ -397,11 +486,35 @@
     function updateFileName() {
         const fileInput = document.getElementById('document');
         const fileNameDisplay = document.getElementById('file-name');
+        const fileSizeDisplay = document.getElementById('file-size');
         
         if (fileInput.files && fileInput.files.length > 0) {
-            fileNameDisplay.textContent = fileInput.files[0].name;
+            const file = fileInput.files[0];
+            fileNameDisplay.textContent = file.name;
+            
+            // Display file size
+            fileSizeDisplay.textContent = `File size: ${formatFileSize(file.size)}`;
+            fileSizeDisplay.classList.remove('hidden');
+            
+            // Add a warning for very large files
+            if (file.size > 200 * 1024 * 1024) { // If over 200MB
+                fileSizeDisplay.innerHTML = `File size: ${formatFileSize(file.size)} <span class="text-yellow-600">(Large file - processing may take several minutes)</span>`;
+            }
         } else {
             fileNameDisplay.textContent = "PDF, TXT, or MD up to 1GB";
+            fileSizeDisplay.classList.add('hidden');
+        }
+    }
+    
+    function formatFileSize(bytes) {
+        if (bytes < 1024) {
+            return bytes + ' B';
+        } else if (bytes < 1024 * 1024) {
+            return (bytes / 1024).toFixed(1) + ' KB';
+        } else if (bytes < 1024 * 1024 * 1024) {
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        } else {
+            return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
         }
     }
 </script>

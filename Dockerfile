@@ -22,10 +22,7 @@ RUN npx tailwindcss -i ./static/src/input.css -o ./static/css/tailwind.css
 ENV FLASK_APP=app.py
 ENV PORT=8080
 
-# Run the application
-CMD exec gunicorn --bind :$PORT app:app
-
-# Check GCS connectivity at startup
+# Create a startup script with GCS connectivity check and proper Gunicorn config
 RUN echo '#!/bin/sh\n\
 echo "Checking GCS connectivity..."\n\
 python -c "import os; from google.cloud import storage; \
@@ -37,6 +34,18 @@ except Exception as e: \
     print(f\"Error connecting to GCS: {str(e)}\"); \
     exit(1)\
 "\n\
-exec gunicorn --bind :$PORT app:app' > /app/startup.sh && chmod +x /app/startup.sh
+# Run with increased max request size and timeout\n\
+exec gunicorn --bind :$PORT \
+    --timeout 600 \
+    --workers 2 \
+    --threads 8 \
+    --worker-tmp-dir /dev/shm \
+    --max-requests 500 \
+    --max-requests-jitter 50 \
+    --limit-request-line 0 \
+    --limit-request-fields 0 \
+    --limit-request-field_size 0 \
+    --worker-class gthread \
+    app:app' > /app/startup.sh && chmod +x /app/startup.sh
 
 CMD ["/app/startup.sh"]
