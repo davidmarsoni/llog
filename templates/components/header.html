@@ -11,7 +11,8 @@
       <nav class="hidden md:flex items-center space-x-8">
         {% set navLinks = [
           {'name': 'Home', 'href': url_for('main.home')},
-          {'name': 'Manage Files', 'href': url_for('file_storage.manage_files')},
+          {'name': 'Add Files', 'href': url_for('file_storage.add_files')},
+          {'name': 'See Cached Content', 'href': url_for('file_storage.view_files')},
           {'name': 'AI Assistant', 'href': url_for('chatbot.chatbot_page')}
         ] %}
         

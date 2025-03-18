@@ -50,6 +50,15 @@ p.s2 you can generate a service account key by following the instructions [here]
 npm run build:css
 ```
 
+### initialize the google cloud configuration
+
+First, make sure you have the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and initialized. Once installed, run the following command to initialize the SDK:
+
+```bash
+gcloud init
+```
+
+
 ### Run the project
 
 ```bash
@@ -63,10 +72,10 @@ then go to [http://localhost:5000](http://localhost:5000) to see the app in acti
 ### Initialize the project
 
 First, make sure you have the [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed and initialized. Once installed, run the following command to initialize the SDK:
+
 ```bash
 gcloud init
 ```
-Then you need to choose the account and project you want to use.
 
 ### Build the docker image
 
@@ -105,7 +114,7 @@ gcloud run deploy flask-app `
   --allow-unauthenticated `
   --region=us-central1 `
   --cpu=1 `
-  --memory=256Mi `
+  --memory=256Mi ` # can be increased if needed like 2048Mi
   --concurrency=1 `
 ```
 

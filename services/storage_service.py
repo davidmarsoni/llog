@@ -4,6 +4,8 @@ Storage service for handling Google Cloud Storage operations
 from flask import current_app
 from google.cloud import storage
 import os
+import io
+import pickle
 
 def get_storage_client():
     """Get a Google Cloud Storage client."""
@@ -99,3 +101,95 @@ def delete_file_from_storage(file_id):
     except Exception as e:
         current_app.logger.error(f"Error in delete_file_from_storage: {str(e)}")
         raise
+
+def get_file_metadata(file_id):
+    """
+    Get metadata for a specific file ID.
+    
+    Args:
+        file_id (str): The file ID to retrieve metadata for
+        
+    Returns:
+        dict: The file metadata or None if not found
+    """
+    try:
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        bucket = client.bucket(bucket_name)
+        
+        # Look for metadata in all possible locations
+        metadata_paths = [
+            f"cache/metadata_{file_id}.pkl",
+            f"cache/metadata_db_{file_id}.pkl",
+            f"cache/metadata_doc_{file_id}.pkl"
+        ]
+        
+        metadata = None
+        found_path = None
+        
+        for path in metadata_paths:
+            blob = bucket.blob(path)
+            if blob.exists():
+                found_path = path
+                with io.BytesIO() as file_buffer:
+                    blob.download_to_file(file_buffer)
+                    file_buffer.seek(0)
+                    metadata = pickle.load(file_buffer)
+                break
+                
+        if metadata:
+            # Add the blob path to the metadata
+            metadata['_storage_path'] = found_path
+            current_app.logger.info(f"Retrieved metadata for {file_id} from {found_path}")
+            return metadata
+        else:
+            current_app.logger.warning(f"No metadata found for file ID: {file_id}")
+            return None
+            
+    except Exception as e:
+        current_app.logger.error(f"Error retrieving file metadata: {str(e)}")
+        return None
+
+def update_file_metadata(file_id, updated_metadata):
+    """
+    Update metadata for a specific file ID.
+    
+    Args:
+        file_id (str): The file ID to update metadata for
+        updated_metadata (dict): The updated metadata
+        
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # First get the existing metadata to determine the storage path
+        existing_metadata = get_file_metadata(file_id)
+        
+        if not existing_metadata or '_storage_path' not in existing_metadata:
+            current_app.logger.error(f"Cannot update metadata: no existing metadata found for {file_id}")
+            return False
+            
+        # Get the storage path from the metadata
+        storage_path = existing_metadata['_storage_path']
+        
+        # Remove the internal storage path before saving back
+        if '_storage_path' in updated_metadata:
+            del updated_metadata['_storage_path']
+            
+        # Save updated metadata back to the same location
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(storage_path)
+        
+        with io.BytesIO() as file_buffer:
+            pickle.dump(updated_metadata, file_buffer)
+            file_buffer.seek(0)
+            blob.upload_from_file(file_buffer)
+            
+        current_app.logger.info(f"Successfully updated metadata for {file_id} at {storage_path}")
+        return True
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating file metadata: {str(e)}")
+        return False

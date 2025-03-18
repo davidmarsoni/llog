@@ -14,6 +14,7 @@ from llama_index.core import VectorStoreIndex, Document
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from dotenv import load_dotenv
 from services.storage_service import get_storage_client
+from services.document_service import extract_auto_metadata
 load_dotenv()
 
 def get_notion_client():
@@ -72,6 +73,25 @@ def extract_notion_page_title(page_id, documents=None):
         current_app.logger.error(f"Error extracting Notion page title: {str(e)}")
         return f"Notion Page {page_id[:8]}..."
 
+def extract_notion_content_as_text(documents):
+    """Extract text content from Notion documents for metadata analysis."""
+    combined_text = ""
+    try:
+        for doc in documents:
+            if hasattr(doc, 'text'):
+                combined_text += doc.text + "\n\n"
+            elif hasattr(doc, 'get_content'):
+                combined_text += doc.get_content() + "\n\n"
+        
+        # Limit the text to a reasonable size for processing
+        if len(combined_text) > 10000:
+            combined_text = combined_text[:10000] + "..."
+            
+        return combined_text
+    except Exception as e:
+        current_app.logger.error(f"Error extracting text from Notion documents: {str(e)}")
+        return combined_text
+
 def cache_notion_page(page_id, custom_name=None):
     """Cache a single Notion page in Google Cloud Storage bucket."""
     start_time = time.time()
@@ -111,6 +131,11 @@ def cache_notion_page(page_id, custom_name=None):
             page_title = extract_notion_page_title(page_id, documents)
             current_app.logger.info(f"Extracted page title: {page_title}")
         
+        # Extract automatic metadata
+        combined_text = extract_notion_content_as_text(documents)
+        auto_metadata = extract_auto_metadata(combined_text)
+        current_app.logger.info(f"Extracted auto-metadata with {len(auto_metadata.get('topics', []))} topics")
+        
         # Get GCS client and bucket
         current_app.logger.info(f"Getting storage client")
         client = get_storage_client()
@@ -122,7 +147,8 @@ def cache_notion_page(page_id, custom_name=None):
             'page_id': page_id,
             'title': page_title,
             'type': 'page',
-            'created_at': time.time()
+            'created_at': time.time(),
+            'auto_metadata': auto_metadata
         }
         
         # Save metadata to GCS
@@ -162,7 +188,8 @@ def cache_notion_page(page_id, custom_name=None):
                 "title": page_title,
                 "chunks": len(nodes),
                 "notion_data_blob": notion_data_blob.name,
-                "error": f"Vector index creation failed: {str(e)}"
+                "error": f"Vector index creation failed: {str(e)}",
+                "metadata": metadata
             }
             
         current_app.logger.info(f"Saving vector index to GCS")
@@ -181,7 +208,8 @@ def cache_notion_page(page_id, custom_name=None):
             "chunks": len(nodes),
             "notion_data_blob": notion_data_blob.name,
             "vector_index_blob": vector_index_blob.name,
-            "time_taken_seconds": elapsed_time
+            "time_taken_seconds": elapsed_time,
+            "metadata": metadata
         }
         
     except Exception as e:
@@ -260,6 +288,11 @@ def cache_notion_database(database_id, custom_name=None):
         if not all_documents:
             raise ValueError("No content found in the specified Notion database pages")
             
+        # Extract automatic metadata
+        combined_text = extract_notion_content_as_text(all_documents)
+        auto_metadata = extract_auto_metadata(combined_text)
+        current_app.logger.info(f"Extracted auto-metadata with {len(auto_metadata.get('topics', []))} topics")
+            
         # Create text chunks for the vector index
         current_app.logger.info(f"Creating text chunks for vector index")
         text_splitter = TokenTextSplitter(chunk_size=512)
@@ -279,7 +312,8 @@ def cache_notion_database(database_id, custom_name=None):
             'type': 'database',
             'page_count': len(page_ids),
             'page_ids': page_ids,
-            'created_at': time.time()
+            'created_at': time.time(),
+            'auto_metadata': auto_metadata
         }
         
         # Save metadata to GCS
@@ -313,7 +347,8 @@ def cache_notion_database(database_id, custom_name=None):
                 "pages_found": len(page_ids),
                 "chunks": len(nodes),
                 "all_data_blob": all_data_blob.name,
-                "error": f"Vector index creation failed: {str(e)}"
+                "error": f"Vector index creation failed: {str(e)}",
+                "metadata": metadata
             }
             
         current_app.logger.info(f"Saving vector index to GCS")
@@ -334,7 +369,8 @@ def cache_notion_database(database_id, custom_name=None):
             "chunks": len(nodes),
             "all_data_blob": all_data_blob.name,
             "all_index_blob": all_index_blob.name,
-            "time_taken_seconds": elapsed_time
+            "time_taken_seconds": elapsed_time,
+            "metadata": metadata
         }
         
     except Exception as e:

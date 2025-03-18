@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Metadata - {{ metadata.title or file_id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header section with consistent button styling from view_files.html -->
+    <div class="mb-6 flex flex-wrap items-center justify-between">
+        <h1 class="text-3xl font-bold">
+            Metadata: {{ metadata.title or file_id }}
+        </h1>
+        <div class="flex space-x-2">
+            <a href="{{ url_for('file_storage.view_files') }}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow">
+                Back to Content
+            </a>
+            <button id="generate-metadata-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow flex items-center">
+                <span class="loading loading-spinner loading-xs mr-2 hidden" id="generate-spinner"></span>
+                <span id="generate-btn-text">Generate AI Metadata</span>
+            </button>
+            <button id="save-metadata-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow">
+                Save Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert message -->
+    <div id="alert-container" class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm hidden">
+        <div id="alert-message"></div>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-sm">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main metadata card -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold">File Details</h2>
+                <p class="text-gray-500 text-sm">Manage file metadata information</p>
+            </div>
+            <div>
+                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full
+                    {% if metadata.auto_metadata.auto_generated %}
+                        bg-green-100 text-green-800
+                    {% else %}
+                        bg-yellow-100 text-yellow-800
+                    {% endif %}">
+                    {{ "AI Generated Metadata" if metadata.auto_metadata.auto_generated else "Basic Metadata" }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <form id="metadata-form">
+                <input type="hidden" name="file_id" value="{{ file_id }}">
+                
+                <!-- Basic details -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Left column -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                            <input type="text" id="title" name="title" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   value="{{ metadata.title }}" required>
+                        </div>
+                        
+                        <div>
+                            <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                            <input type="text" id="type" name="type" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50" 
+                                   value="{{ metadata.type }}" readonly>
+                        </div>
+                        
+                        {% if metadata.format %}
+                        <div>
+                            <label for="format" class="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                            <input type="text" id="format" name="format" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   value="{{ metadata.format }}" readonly>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <label for="created_at" class="block text-sm font-medium text-gray-700 mb-1">Created At</label>
+                            <input type="text" id="created_at" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   value="{{ metadata.created_at | timestamp_to_date }}" readonly>
+                        </div>
+                        
+                        {% if metadata.filename %}
+                        <div>
+                            <label for="filename" class="block text-sm font-medium text-gray-700 mb-1">Original Filename</label>
+                            <input type="text" id="filename" name="filename" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   value="{{ metadata.filename }}" readonly>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Right column -->
+                    <div class="space-y-4">
+                        <div>
+                            <label for="summary" class="block text-sm font-medium text-gray-700 mb-1">Summary</label>
+                            <textarea id="summary" name="auto_metadata.summary" 
+                                      class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                                      rows="6">{{ metadata.auto_metadata.summary }}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="language" class="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                            <input type="text" id="language" name="auto_metadata.language" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   value="{{ metadata.auto_metadata.language }}">
+                        </div>
+                        
+                        <div>
+                            <label for="content_type" class="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+                            <input type="text" id="content_type" name="auto_metadata.contentType" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   value="{{ metadata.auto_metadata.contentType }}">
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-6 border-t border-gray-200">
+                
+                <!-- Themes and Topics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Themes -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold">Themes</h3>
+                            <button type="button" id="add-theme-btn" 
+                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                Add Theme
+                            </button>
+                        </div>
+                        <div id="themes-container" class="space-y-2">
+                            {% for theme in metadata.auto_metadata.themes %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="auto_metadata.themes[]" value="{{ theme }}" 
+                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Topics -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold">Topics</h3>
+                            <button type="button" id="add-topic-btn" 
+                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                Add Topic
+                            </button>
+                        </div>
+                        <div id="topics-container" class="space-y-2">
+                            {% for topic in metadata.auto_metadata.topics %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="auto_metadata.topics[]" value="{{ topic }}" 
+                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <hr class="my-6 border-t border-gray-200">
+                
+                <!-- Keywords and Entities -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Keywords -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold">Keywords</h3>
+                            <button type="button" id="add-keyword-btn" 
+                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                Add Keyword
+                            </button>
+                        </div>
+                        <div id="keywords-container" class="space-y-2">
+                            {% for keyword in metadata.auto_metadata.keywords %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="auto_metadata.keywords[]" value="{{ keyword }}" 
+                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <!-- Entities -->
+                    <div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-lg font-semibold">Entities</h3>
+                            <button type="button" id="add-entity-btn" 
+                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                Add Entity
+                            </button>
+                        </div>
+                        <div id="entities-container" class="space-y-2">
+                            {% for entity in metadata.auto_metadata.entities %}
+                                <div class="flex items-center gap-2">
+                                    <input type="text" name="auto_metadata.entities[]" value="{{ entity }}" 
+                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Function to create new item input field
+    function createItemInput(name) {
+        const div = document.createElement('div');
+        div.className = 'flex items-center gap-2';
+        div.innerHTML = `
+            <input type="text" name="${name}[]" 
+                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        `;
+        return div;
+    }
+    
+    // Add event listeners for add buttons
+    document.getElementById('add-theme-btn').addEventListener('click', function() {
+        const container = document.getElementById('themes-container');
+        container.appendChild(createItemInput('auto_metadata.themes'));
+    });
+    
+    document.getElementById('add-topic-btn').addEventListener('click', function() {
+        const container = document.getElementById('topics-container');
+        container.appendChild(createItemInput('auto_metadata.topics'));
+    });
+    
+    document.getElementById('add-keyword-btn').addEventListener('click', function() {
+        const container = document.getElementById('keywords-container');
+        container.appendChild(createItemInput('auto_metadata.keywords'));
+    });
+    
+    document.getElementById('add-entity-btn').addEventListener('click', function() {
+        const container = document.getElementById('entities-container');
+        container.appendChild(createItemInput('auto_metadata.entities'));
+    });
+    
+    // Handle remove buttons with event delegation
+    document.addEventListener('click', function(e) {
+        const button = e.target.closest('.remove-item-btn');
+        if (button) {
+            const itemDiv = button.closest('div');
+            itemDiv.remove();
+        }
+    });
+    
+    // Show an alert message function
+    function showAlert(message, type = 'success') {
+        const alertContainer = document.getElementById('alert-container');
+        const alertMessage = document.getElementById('alert-message');
+        
+        // Set alert style based on type
+        if (type === 'success') {
+            alertContainer.className = 'mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm';
+        } else if (type === 'error') {
+            alertContainer.className = 'mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm';
+        } else {
+            alertContainer.className = 'mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-sm';
+        }
+        
+        alertMessage.textContent = message;
+        alertContainer.classList.remove('hidden');
+        
+        // Automatically hide after 5 seconds
+        setTimeout(() => {
+            alertContainer.classList.add('hidden');
+        }, 5000);
+    }
+    
+    // Handle AI metadata generation
+    document.getElementById('generate-metadata-btn').addEventListener('click', function() {
+        // Show loading state
+        const spinner = document.getElementById('generate-spinner');
+        const btnText = document.getElementById('generate-btn-text');
+        spinner.classList.remove('hidden');
+        btnText.textContent = 'Generating...';
+        
+        // Disable button while processing
+        const generateBtn = document.getElementById('generate-metadata-btn');
+        generateBtn.disabled = true;
+        
+        // Get file ID
+        const fileId = document.querySelector('input[name="file_id"]').value;
+        
+        // Make API request to generate metadata
+        fetch(`{{ url_for("file_storage.generate_metadata", file_id=file_id) }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Generate AI Metadata';
+            generateBtn.disabled = false;
+            
+            if (data.success) {
+                // Update form fields with generated metadata
+                if (data.metadata && data.metadata.auto_metadata) {
+                    const autoMetadata = data.metadata.auto_metadata;
+                    
+                    // Update text fields
+                    document.getElementById('summary').value = autoMetadata.summary || '';
+                    document.getElementById('language').value = autoMetadata.language || '';
+                    document.getElementById('content_type').value = autoMetadata.contentType || '';
+                    
+                    // Update array fields
+                    updateArrayField('themes-container', 'auto_metadata.themes', autoMetadata.themes || []);
+                    updateArrayField('topics-container', 'auto_metadata.topics', autoMetadata.topics || []);
+                    updateArrayField('keywords-container', 'auto_metadata.keywords', autoMetadata.keywords || []);
+                    updateArrayField('entities-container', 'auto_metadata.entities', autoMetadata.entities || []);
+                    
+                    // Update badge to show AI-generated
+                    const badge = document.querySelector('span.inline-flex');
+                    badge.className = 'px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800';
+                    badge.textContent = 'AI Generated Metadata';
+                    
+                    showAlert('Metadata successfully generated using AI!', 'success');
+                }
+            } else {
+                showAlert(data.error || 'Error generating metadata', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            spinner.classList.add('hidden');
+            btnText.textContent = 'Generate AI Metadata';
+            generateBtn.disabled = false;
+            showAlert('An error occurred while generating metadata.', 'error');
+        });
+    });
+    
+    // Function to update array fields (themes, topics, keywords, entities)
+    function updateArrayField(containerId, fieldName, items) {
+        const container = document.getElementById(containerId);
+        
+        // Remove existing items
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+        
+        // Add new items
+        items.forEach(item => {
+            container.appendChild(createItemInput(fieldName)).querySelector('input').value = item;
+        });
+    }
+    
+    // Handle form submission via AJAX
+    document.getElementById('save-metadata-btn').addEventListener('click', function() {
+        const form = document.getElementById('metadata-form');
+        const formData = new FormData(form);
+        
+        // Convert form data to an object structure
+        const metadata = {
+            file_id: formData.get('file_id'),
+            title: formData.get('title'),
+            auto_metadata: {
+                summary: formData.get('auto_metadata.summary'),
+                language: formData.get('auto_metadata.language'),
+                contentType: formData.get('auto_metadata.contentType'),
+                themes: Array.from(formData.getAll('auto_metadata.themes[]')).filter(Boolean),
+                topics: Array.from(formData.getAll('auto_metadata.topics[]')).filter(Boolean),
+                keywords: Array.from(formData.getAll('auto_metadata.keywords[]')).filter(Boolean),
+                entities: Array.from(formData.getAll('auto_metadata.entities[]')).filter(Boolean),
+                auto_generated: true
+            }
+        };
+        
+        // Send AJAX request
+        fetch('{{ url_for("file_storage.update_metadata", file_id=file_id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(metadata),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                showAlert('Metadata updated successfully!', 'success');
+            } else {
+                // Show error message
+                showAlert(data.error || 'Error updating metadata', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('An error occurred while updating metadata.', 'error');
+        });
+    });
+});
+</script>
+{% endblock %}
