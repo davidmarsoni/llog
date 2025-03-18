@@ -98,7 +98,7 @@ gcloud auth configure-docker
 Push the image to Google Container Registry
 
 ```bash
-c
+docker push gcr.io/your-project-id/flask-app
 ```
 
 ### Deploy the image
