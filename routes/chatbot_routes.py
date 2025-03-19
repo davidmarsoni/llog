@@ -44,13 +44,6 @@ def chatbot_query():
             response = make_response(jsonify({'response': 'Please provide a query.'}))
             return add_cache_headers(response)
         
-        # Prepare context for the LLM
-        context = {
-            'use_content': use_content,
-            'content_ids': content_ids,
-            'chat_history': chat_history
-        }
-        
         # Log the query details
         current_app.logger.info(f"Chatbot query: {query}")
         if use_content:
@@ -58,12 +51,27 @@ def chatbot_query():
         
         # Use the LLM service to get a response with appropriate context
         try:
-            # Set a timeout for the entire operation
-            response = get_llm_response(query, context)
+            # Call the get_llm_response function with proper parameters
+            llm_response = get_llm_response(
+                query=query,
+                chat_history=chat_history,
+                index_ids=content_ids if content_ids else None,
+                use_context=use_content
+            )
+            
+            # Handle different response formats
+            if "error" in llm_response:
+                return add_cache_headers(make_response(jsonify({
+                    'error': llm_response["error"]
+                }), 500))
+            
+            # Extract the answer from the response
+            answer = llm_response.get("answer", "Sorry, no response was generated.")
+            used_context = llm_response.get("used_context", False)
             
             json_response = make_response(jsonify({
-                'response': response,
-                'used_content': use_content,
+                'answer': answer,
+                'used_content': used_context,
                 'content_ids_used': content_ids if use_content else []
             }))
             return add_cache_headers(json_response)
@@ -71,15 +79,13 @@ def chatbot_query():
         except httpx.TimeoutException:
             current_app.logger.error("Request to LLM service timed out")
             return add_cache_headers(make_response(jsonify({
-                'response': "I'm sorry, but the request timed out. Please try again with a shorter query or less context.",
-                'error': 'timeout'
+                'error': "I'm sorry, but the request timed out. Please try again with a shorter query or less context."
             }), 408))
     
     except Exception as e:
         current_app.logger.error(f"Error in chatbot query: {str(e)}")
         return add_cache_headers(make_response(jsonify({
-            'response': f"Sorry, there was an error processing your request: {str(e)}",
-            'error': 'general'
+            'error': f"Sorry, there was an error processing your request: {str(e)}"
         }), 500))
 
 @chatbot_bp.after_request

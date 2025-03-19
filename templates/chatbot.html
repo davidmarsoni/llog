@@ -216,12 +216,21 @@
                     
                     const data = await response.json();
                     
-                    // Add bot response
-                    addMessage('AI Assistant', data.response, true);
+                    // Add bot response - fix to ensure we're getting the text content
+                    if (data.error) {
+                        addMessage('AI Assistant', `Error: ${data.error}`, true);
+                    } else if (data.response) {
+                        addMessage('AI Assistant', data.response, true);
+                    } else if (data.answer) {
+                        // Handle case where response is in the answer field instead
+                        addMessage('AI Assistant', data.answer, true);
+                    } else {
+                        addMessage('AI Assistant', 'Sorry, I received an empty response. Please try again.', true);
+                    }
                     
                     // Indicate that content was used
                     if (data.used_content) {
-                        const usedContentIds = data.content_ids_used.length > 0 
+                        const usedContentIds = data.content_ids_used && data.content_ids_used.length > 0 
                             ? data.content_ids_used.join(', ') 
                             : 'all available';
                             

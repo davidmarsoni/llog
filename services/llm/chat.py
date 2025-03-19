@@ -4,11 +4,12 @@ LLM chat interaction functionality using LlamaIndex
 import os
 from typing import Dict, Any, List, Optional
 from flask import current_app
-from llama_index.core.llms import ChatMessage, MessageRole # corrected import
+from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai import OpenAI
 from llama_index.core import Settings
 from llama_index.core.chat_engine import ContextChatEngine
 from llama_index.core.memory import ChatMemoryBuffer
+from llama_index.core.retrievers import BaseRetriever
 from services.llm.content import query_content
 
 def get_llm_response(
@@ -62,6 +63,7 @@ def get_llm_response(
             
         # If using context, get relevant content from indexes
         context = ""
+        retrieved_nodes = []
         if use_context:
             # Query content for relevant information
             content_results = query_content(
@@ -79,6 +81,14 @@ def get_llm_response(
                         source = f"{result.get('title', 'Unknown')} ({result.get('source', 'Unknown')})"
                         relevant_texts.append(f"From {source}:\n{content}")
                         
+                        # Also add to retrieved_nodes for the retriever
+                        from llama_index.core.schema import NodeWithScore, TextNode
+                        node = NodeWithScore(
+                            node=TextNode(text=content, metadata={"source": source}),
+                            score=result.get("score", 1.0)
+                        )
+                        retrieved_nodes.append(node)
+                        
                 if relevant_texts:
                     context = "\n\n".join(relevant_texts)
         
@@ -92,10 +102,18 @@ def get_llm_response(
             Context:
             {context}"""
             
-            # Create a context chat engine with the context as system prompt
+            # Create a custom retriever that just returns the nodes we've already retrieved
+            class CustomRetriever(BaseRetriever):
+                def _retrieve(self, query_str):
+                    return retrieved_nodes
+                    
+            retriever = CustomRetriever()
+            
+            # Create a context chat engine with the context in the system prompt
             chat_engine = ContextChatEngine.from_defaults(
                 system_prompt=system_prompt,
                 memory=memory,
+                retriever=retriever,
                 llm=llm
             )
             

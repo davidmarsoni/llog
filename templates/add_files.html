@@ -187,7 +187,7 @@
                         <label for="document" class="block text-gray-700 font-medium mb-1">
                             Select Document:
                         </label>
-                        <div class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
+                        <div id="drop-area" class="mt-2 flex justify-center rounded-lg border border-dashed border-gray-300 px-6 py-10">
                             <div class="text-center">
                                 <svg class="mx-auto h-12 w-12 text-gray-300" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
@@ -203,6 +203,11 @@
                                 
                                 <!-- File size indicator -->
                                 <div id="file-size" class="hidden mt-2 text-sm text-blue-600"></div>
+                                
+                                <!-- File type error message -->
+                                <div id="file-type-error" class="hidden mt-2 text-sm text-red-600">
+                                    Error: Only PDF, TXT, or MD files are allowed.
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -302,6 +307,72 @@
         const progressContainer = document.getElementById('upload-progress-container');
         const processingContainer = document.getElementById('processing-progress-container');
         const fileSize = document.getElementById('file-size');
+        const dropArea = document.getElementById('drop-area');
+        const fileTypeError = document.getElementById('file-type-error');
+        
+        // Accepted file types
+        const acceptedFileTypes = ['.pdf', '.txt', '.md'];
+        
+        // Drag and drop functionality
+        if (dropArea) {
+            // Prevent default drag behaviors
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            // Highlight drop area when item is dragged over it
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            // Handle dropped files
+            dropArea.addEventListener('drop', handleDrop, false);
+        }
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function highlight() {
+            dropArea.classList.add('border-blue-500', 'bg-blue-50');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('border-blue-500', 'bg-blue-50');
+        }
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                const file = files[0];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                // Check if file type is accepted
+                if (!acceptedFileTypes.includes(fileExtension)) {
+                    fileTypeError.classList.remove('hidden');
+                    dropArea.classList.add('border-red-500');
+                    fileSize.classList.add('hidden');
+                    uploadButton.disabled = true;
+                    return;
+                }
+                
+                // Hide error message if previously shown
+                fileTypeError.classList.add('hidden');
+                dropArea.classList.remove('border-red-500');
+                uploadButton.disabled = false;
+                
+                documentInput.files = files;
+                updateFileName();
+            }
+        }
         
         if (notionForm) {
             notionForm.addEventListener('submit', function(e) {
@@ -340,6 +411,16 @@
                 if (!documentInput.files || documentInput.files.length === 0) {
                     e.preventDefault();
                     alert('Please select a file to upload.');
+                    return;
+                }
+                
+                // Validate file type
+                const file = documentInput.files[0];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                if (!acceptedFileTypes.includes(fileExtension)) {
+                    e.preventDefault();
+                    fileTypeError.classList.remove('hidden');
+                    dropArea.classList.add('border-red-500');
                     return;
                 }
                 
@@ -487,9 +568,30 @@
         const fileInput = document.getElementById('document');
         const fileNameDisplay = document.getElementById('file-name');
         const fileSizeDisplay = document.getElementById('file-size');
+        const fileTypeError = document.getElementById('file-type-error');
+        const dropArea = document.getElementById('drop-area');
+        const uploadButton = document.getElementById('upload-button');
+        const acceptedFileTypes = ['.pdf', '.txt', '.md'];
         
         if (fileInput.files && fileInput.files.length > 0) {
             const file = fileInput.files[0];
+            const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+            
+            // Check if file type is accepted
+            if (!acceptedFileTypes.includes(fileExtension)) {
+                fileNameDisplay.textContent = file.name;
+                fileTypeError.classList.remove('hidden');
+                dropArea.classList.add('border-red-500');
+                fileSizeDisplay.classList.add('hidden');
+                uploadButton.disabled = true;
+                return;
+            }
+            
+            // Hide error message if previously shown
+            fileTypeError.classList.add('hidden');
+            dropArea.classList.remove('border-red-500');
+            uploadButton.disabled = false;
+            
             fileNameDisplay.textContent = file.name;
             
             // Display file size
@@ -503,6 +605,8 @@
         } else {
             fileNameDisplay.textContent = "PDF, TXT, or MD up to 1GB";
             fileSizeDisplay.classList.add('hidden');
+            fileTypeError.classList.add('hidden');
+            dropArea.classList.remove('border-red-500');
         }
     }
     
