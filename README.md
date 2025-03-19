@@ -20,6 +20,15 @@ backend:
 pip install -r requirements.txt
 ```
 
+p.s. You may need have admin rights to install the packages. If you cannot obtain admin rights, you can use a virtual environment to install the packages locally.
+
+```bash
+python -m venv venv
+source venv/bin/activate # on macOS/Linux
+venv\Scripts\activate # on Windows
+pip install -r requirements.txt
+```
+
 frontend:
 
 ```bash
@@ -28,27 +37,46 @@ npm install
 
 ### Environment variables
 
-Create a `.env` file in the root directory of the project and add the following variables:
+Copy the `.env.example` file to a new file called `.env` in the root directory of the project. This file contains all the environment variables needed to run the project.
+
+Then fill in the values for the environment variables in the `.env` file. The file should look like this:
 
 ```bash
 FLASK_SECRET_KEY=<your_secret_key>
 GCS_BUCKET_NAME=<your_bucket_name>
 GOOGLE_APPLICATION_CREDENTIALS=credentials.json # path to your service account key
+NOTION_INTEGRATION_TOKEN=<your_notion_integration_token>
+OPENAI_API_KEY=<your_openai_api_key>
+TAVILY_API_KEY=<your_tavily_api_key>
 ```
 
-p.s. you can generate a secret key using the following command:
+#### Flask secret key
+
+The `FLASK_SECRET_KEY` is used to sign cookies and should be a long random string. You can generate a random string using the following command:
 
 ```bash
 python -c 'import secrets; print(secrets.token_hex(16))'
 ```
 
-p.s2 you can generate a service account key by following the instructions [here](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account)
+#### Google Cloud Storage bucket name
 
-### Build the tailwind css
+The `GCS_BUCKET_NAME` is the name of the Google Cloud Storage bucket where the files will be stored. You can create a new bucket by following the instructions [here](https://cloud.google.com/storage/docs/creating-buckets).
 
-```bash
-npm run build:css
-```
+#### Google Cloud Service Account
+
+The `GOOGLE_APPLICATION_CREDENTIALS` is the path to the service account key file. You can create a new service account by following the instructions [here](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
+
+#### Notion integration token
+
+The `NOTION_INTEGRATION_TOKEN` is the token used to access the Notion API. You can create a new integration by following the instructions [here](https://developers.notion.com/docs/getting-started#step-1-create-an-integration).
+
+#### OpenAI
+
+The `OPENAI_API_KEY` is the token used to access the OpenAI API. You can create a new API key by following the instructions [here](https://platform.openai.com/docs/api-reference/authentication).
+
+#### Tavily
+
+The `TAVILY_API_KEY` is the token used to access the Tavily API. You can create a new API key by following the instructions [here](https://docs.tavily.com/documentation/quickstart).
 
 ### initialize the google cloud configuration
 
@@ -58,16 +86,32 @@ First, make sure you have the [Google Cloud SDK](https://cloud.google.com/sdk/do
 gcloud init
 ```
 
+You will be prompted to select a account and a project. Make sure to select the project you want to use.
 
 ### Run the project
 
+First, open a terminal and run the following command to build automatically the css files during development:
+
 ```bash
-flask run --debug
+npm run build:css
 ```
+
+Then, open another terminal and run the following command to start the backend server:
+
+```bash
+flask run
+```
+
+p.s you can add the `--debug` flag to the command to enable debug mode.
 
 then go to [http://localhost:5000](http://localhost:5000) to see the app in action.
 
-## Setup + Deploy on Google Cloud Run
+## Deploy to Google Cloud Run
+This project is designed to be deployed on Google Cloud Run. The deployment process is automated using a Dockerfile, which allows you to build and run the application in a containerized environment.
+
+Note: that the deployment has been automated with the google cloud build service. Each time you push a new commit on the main branch, the service will automatically build and deploy the new version of the app to Google Cloud Run.
+
+The following section then describes how to deploy the app manually if you need to test the deployment of a particular commit or if you want to deploy the app to a different project.
 
 ### Initialize the project
 
@@ -81,13 +125,17 @@ gcloud init
 
 First, build the image locally and make sure that docker is installed and running.
 
+Then, run the following command to build the image locally:
+
 ```bash
 docker build -t gcr.io/your-project-id/flask-app .
 ```
 
 ### Configure the Docker credential
 
-Configure Docker to use the gcloud command-line tool as a credential helper
+To push the image to Google Container Registry, you need to configure Docker to use the Google Cloud credentials.
+
+To do this, run the following command:
 
 ```bash
 gcloud auth configure-docker
@@ -95,7 +143,7 @@ gcloud auth configure-docker
 
 ### Push the docker image
 
-Push the image to Google Container Registry
+Push the image to Google Container Registry using the following command:
 
 ```bash
 docker push gcr.io/your-project-id/flask-app
@@ -114,11 +162,12 @@ gcloud run deploy flask-app `
   --allow-unauthenticated `
   --region=us-central1 `
   --cpu=1 `
-  --memory=256Mi ` # can be increased if needed like 2048Mi
-  --concurrency=1 `
+  --memory=2048Mi ` # can be increased if needed 
+  --concurrency=1 ` # To avoid concurrent requests 
+  --max-instances=1 ` # To avoid high costs
 ```
 
-> don't forget to replace `your-project-id`, `your-bucket-name`, `your-secret-key-value` and `your-service-account-email` with your own values and add the missing environment variables with the `--set-env-vars` flag.
+> don't forget to replace `your-project-id`, `your-bucket-name`, `your-secret-key-value` and `your-service-account-email` with your own values and add the missing environment variables with the `--set-env-vars` flag. (please refer to the [Environment variables](#environment-variables) section for more information)
 
 p.s you can add a new service account  with the admin role to the project by running the following command:
 
