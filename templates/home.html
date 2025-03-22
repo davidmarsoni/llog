@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Llog - Home{% endblock %}
+{% block title %}Welcome to Llog{% endblock %}
 {% block content %}
 <section class="py-16 md:py-24">
   <div class="container mx-auto px-4">
@@ -20,11 +20,11 @@
       </p>
       
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{{ url_for('file_storage.manage_files') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-md transition-colors w-full sm:w-auto text-center">
-          Manage Files
+        <a href="{{ url_for('file_storage.add_files') }}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-6 rounded-md transition-colors w-full sm:w-auto text-center">
+          Add Content
         </a>
         <a href="{{ url_for('chatbot.chatbot_page') }}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-6 rounded-md transition-colors w-full sm:w-auto text-center">
-          Try AI Assistant
+          Chat with AI
         </a>
       </div>
     </div>

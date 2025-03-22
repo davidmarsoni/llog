@@ -43,25 +43,74 @@
 
         <!-- Chat Container -->
         <div id="chat-container" class="border rounded p-4 mb-4 h-80 overflow-y-auto">
-            <div class="mb-4">
-                <div class="font-bold text-blue-600">AI Assistant</div>
-                <div class="bg-blue-100 rounded-lg p-3 text-gray-800">
-                    Hello! I'm your AI assistant. How can I help you today?
+            <!-- Initial messages if any -->
+            {% for message in messages %}
+                <div class="mb-4">
+                    <div class="font-bold {% if message.role == 'user' %}text-green-600{% else %}text-blue-600{% endif %}">
+                        {{ 'You' if message.role == 'user' else 'AI Assistant' }}
+                    </div>
+                    <div class="{% if message.role == 'user' %}bg-green-100{% else %}bg-blue-100{% endif %} rounded-lg p-3 text-gray-800">
+                        {{ message.content }}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <form id="chat-form" class="space-y-4"
+              hx-post="{{ url_for('chatbot.send_message') }}"
+              hx-target="#chat-container"
+              hx-swap="beforeend scroll:bottom"
+              hx-indicator="#send-loading"
+              hx-disabled-elt="#send-button">
+            
+            <!-- Message input with real-time character count -->
+            <div class="relative">
+                <textarea name="message" 
+                          id="message-input"
+                          class="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
+                          rows="3" 
+                          placeholder="Type your message here..."
+                          required
+                          hx-trigger="keyup changed delay:100ms"
+                          hx-get="{{ url_for('chatbot.check_message_length') }}"
+                          hx-target="#char-count"
+                          hx-swap="innerHTML"></textarea>
+                <div id="char-count" class="absolute bottom-2 right-2 text-sm text-gray-500">0/2000</div>
+            </div>
+
+            <!-- Hidden inputs for content selection -->
+            <input type="hidden" name="use_content" id="use-content-input" value="false">
+            <div id="content-ids-container"></div>
+
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <div id="send-loading" class="loading-indicator">
+                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    </div>
+                    <button id="send-button" 
+                            type="submit" 
+                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Send Message
+                    </button>
                 </div>
             </div>
-            <div id="chat-messages"></div>
-        </div>
-        
-        <!-- Input Area -->
-        <div class="flex">
-            <input type="text" id="user-input" placeholder="Type your message here..." 
-                   class="border rounded-l py-2 px-4 flex-grow focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button id="send-btn" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r">
-                Send
-            </button>
-        </div>
-        <div id="loading-indicator" class="hidden mt-2 text-sm text-gray-500">
-            AI is thinking...
+        </form>
+
+        <!-- Error toast -->
+        <div id="error-toast" 
+             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p id="error-message" class="text-sm font-medium">
+                        An error occurred. Please try again.
+                    </p>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -73,21 +122,18 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const chatMessages = document.getElementById('chat-messages');
-            const userInput = document.getElementById('user-input');
-            const sendBtn = document.getElementById('send-btn');
-            const chatContainer = document.getElementById('chat-container');
-            const loadingIndicator = document.getElementById('loading-indicator');
             const useContent = document.getElementById('use-content');
+            const useContentInput = document.getElementById('use-content-input');
             const contentOptions = document.getElementById('content-options');
             const refreshIndexesBtn = document.getElementById('refresh-indexes');
-            
-            // Chat history for context
-            let chatHistory = [];
+            const chatContainer = document.getElementById('chat-container');
+            const messageInput = document.getElementById('message-input');
+            const contentIdsContainer = document.getElementById('content-ids-container');
             
             // Toggle content options visibility
             useContent.addEventListener('change', function() {
                 contentOptions.classList.toggle('hidden', !this.checked);
+                useContentInput.value = this.checked;
             });
             
             // Refresh available indexes
@@ -97,8 +143,6 @@
                     const data = await response.json();
                     
                     const container = document.getElementById('content-indexes-container');
-                    
-                    // Clear current options
                     container.innerHTML = '';
                     
                     if (data.indexes && data.indexes.length > 0) {
@@ -130,6 +174,9 @@
                             div.appendChild(checkbox);
                             div.appendChild(label);
                             container.appendChild(div);
+                            
+                            // Add change listener to update hidden inputs
+                            checkbox.addEventListener('change', updateContentIds);
                         });
                     } else {
                         container.innerHTML = `
@@ -142,123 +189,43 @@
                     }
                 } catch (error) {
                     console.error('Error refreshing indexes:', error);
+                    showError('Error refreshing indexes. Please try again.');
                 }
             });
             
-            function addMessage(sender, text, isAi = false) {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'mb-4';
-                
-                const senderDiv = document.createElement('div');
-                senderDiv.className = isAi ? 'font-bold text-blue-600' : 'font-bold text-green-600';
-                senderDiv.textContent = sender;
-                
-                const textDiv = document.createElement('div');
-                textDiv.className = isAi ? 'bg-blue-100 rounded-lg p-3 text-gray-800' : 'bg-green-100 rounded-lg p-3 text-gray-800';
-                textDiv.textContent = text;
-                
-                messageDiv.appendChild(senderDiv);
-                messageDiv.appendChild(textDiv);
-                
-                chatMessages.appendChild(messageDiv);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-                
-                // Update chat history for context
-                chatHistory.push({
-                    role: isAi ? 'assistant' : 'user',
-                    content: text
+            // Update hidden inputs for selected content IDs
+            function updateContentIds() {
+                contentIdsContainer.innerHTML = '';
+                document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'content_ids[]';
+                    input.value = checkbox.value;
+                    contentIdsContainer.appendChild(input);
                 });
-                
-                // Limit history to last 10 messages to avoid token limits
-                if (chatHistory.length > 10) {
-                    chatHistory = chatHistory.slice(chatHistory.length - 10);
-                }
             }
             
-            async function handleUserInput() {
-                const userText = userInput.value.trim();
-                if (!userText) return;
-                
-                // Add user message to chat
-                addMessage('You', userText);
-                
-                // Clear input field
-                userInput.value = '';
-                
-                // Show loading indicator
-                loadingIndicator.classList.remove('hidden');
-                sendBtn.disabled = true;
-                
-                // Get selected content indexes if enabled
-                const useContentEnabled = useContent.checked;
-                let contentIds = [];
-                
-                if (useContentEnabled) {
-                    document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
-                        contentIds.push(checkbox.value);
-                    });
-                }
-                
-                try {
-                    // Call the backend API
-                    const response = await fetch('/chatbot/query', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            query: userText,
-                            use_content: useContentEnabled,
-                            content_ids: contentIds,
-                            chat_history: chatHistory.slice(0, -1) // Exclude the current message
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    // Add bot response - fix to ensure we're getting the text content
-                    if (data.error) {
-                        addMessage('AI Assistant', `Error: ${data.error}`, true);
-                    } else if (data.response) {
-                        addMessage('AI Assistant', data.response, true);
-                    } else if (data.answer) {
-                        // Handle case where response is in the answer field instead
-                        addMessage('AI Assistant', data.answer, true);
-                    } else {
-                        addMessage('AI Assistant', 'Sorry, I received an empty response. Please try again.', true);
-                    }
-                    
-                    // Indicate that content was used
-                    if (data.used_content) {
-                        const usedContentIds = data.content_ids_used && data.content_ids_used.length > 0 
-                            ? data.content_ids_used.join(', ') 
-                            : 'all available';
-                            
-                        console.log(`Used content: ${usedContentIds}`);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    addMessage('AI Assistant', 'Sorry, there was an error processing your request.', true);
-                } finally {
-                    // Hide loading indicator
-                    loadingIndicator.classList.add('hidden');
-                    sendBtn.disabled = false;
-                    // Focus input field
-                    userInput.focus();
-                }
-            }
-            
-            // Event listeners
-            sendBtn.addEventListener('click', handleUserInput);
-            
-            userInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    handleUserInput();
-                }
+            // Add change listeners to existing checkboxes
+            document.querySelectorAll('.content-index-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateContentIds);
             });
+            
+            // Show error message
+            function showError(message) {
+                const errorToast = document.getElementById('error-toast');
+                const errorMessage = document.getElementById('error-message');
+                errorMessage.textContent = message;
+                errorToast.style.opacity = '1';
+                setTimeout(() => {
+                    errorToast.style.opacity = '0';
+                }, 5000);
+            }
+            
+            // Initialize content IDs
+            updateContentIds();
             
             // Focus input field on load
-            userInput.focus();
+            messageInput.focus();
         });
     </script>
 {% endblock %}

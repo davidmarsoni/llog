@@ -13,7 +13,7 @@ from llama_index.readers.notion import NotionPageReader
 from llama_index.core import VectorStoreIndex, Document
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from dotenv import load_dotenv
-from services.storage_service import get_storage_client
+from services.storage_service import generate_uuid, get_storage_client
 from services.document_service import extract_auto_metadata
 load_dotenv()
 
@@ -92,7 +92,7 @@ def extract_notion_content_as_text(documents):
         current_app.logger.error(f"Error extracting text from Notion documents: {str(e)}")
         return combined_text
 
-def cache_notion_page(page_id, custom_name=None):
+def cache_notion_page(page_id,custom_name=None, item_uuid=generate_uuid()):
     """Cache a single Notion page in Google Cloud Storage bucket."""
     start_time = time.time()
     try:
@@ -144,16 +144,19 @@ def cache_notion_page(page_id, custom_name=None):
         
         # Store metadata with page title
         metadata = {
-            'page_id': page_id,
+            'id': item_uuid,
+            'notion_id': page_id,
             'title': page_title,
             'type': 'page',
             'created_at': time.time(),
             'auto_metadata': auto_metadata
         }
         
+        item_id = metadata['id']
+
         # Save metadata to GCS
         current_app.logger.info(f"Saving metadata to GCS")
-        metadata_blob = bucket.blob(f"cache/metadata_{page_id}.pkl")
+        metadata_blob = bucket.blob(f"cache/metadata_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(metadata, file_buffer)
             file_buffer.seek(0)
@@ -161,7 +164,7 @@ def cache_notion_page(page_id, custom_name=None):
         
         # Save raw notion data to GCS
         current_app.logger.info(f"Saving raw Notion data to GCS")
-        notion_data_blob = bucket.blob(f"cache/notion_data_{page_id}.pkl")
+        notion_data_blob = bucket.blob(f"cache/data_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(documents, file_buffer)
             file_buffer.seek(0)
@@ -184,7 +187,7 @@ def cache_notion_page(page_id, custom_name=None):
             return {
                 "success": True,
                 "partial": True,
-                "page_id": page_id,
+                "notion_id": page_id,
                 "title": page_title,
                 "chunks": len(nodes),
                 "notion_data_blob": notion_data_blob.name,
@@ -193,7 +196,7 @@ def cache_notion_page(page_id, custom_name=None):
             }
             
         current_app.logger.info(f"Saving vector index to GCS")
-        vector_index_blob = bucket.blob(f"cache/vector_index_{page_id}.pkl")
+        vector_index_blob = bucket.blob(f"cache/vector_index_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(index, file_buffer)
             file_buffer.seek(0)
@@ -203,7 +206,7 @@ def cache_notion_page(page_id, custom_name=None):
         current_app.logger.info(f"Successfully cached Notion page '{page_title}' to GCS bucket {bucket_name} in {elapsed_time:.2f} seconds")
         return {
             "success": True,
-            "page_id": page_id,
+            "notion_id": page_id,
             "title": page_title,
             "chunks": len(nodes),
             "notion_data_blob": notion_data_blob.name,
@@ -307,7 +310,7 @@ def cache_notion_database(database_id, custom_name=None):
         
         # Store metadata with database title
         metadata = {
-            'database_id': database_id,
+            'notion_id': database_id,
             'title': database_title,
             'type': 'database',
             'page_count': len(page_ids),
@@ -316,9 +319,11 @@ def cache_notion_database(database_id, custom_name=None):
             'auto_metadata': auto_metadata
         }
         
+        item_id = generate_uuid()
+        
         # Save metadata to GCS
         current_app.logger.info(f"Saving database metadata to GCS")
-        metadata_blob = bucket.blob(f"cache/metadata_db_{database_id}.pkl")
+        metadata_blob = bucket.blob(f"cache/metadata_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(metadata, file_buffer)
             file_buffer.seek(0)
@@ -326,7 +331,7 @@ def cache_notion_database(database_id, custom_name=None):
         
         # Save all documents from the database to GCS
         current_app.logger.info(f"Saving raw database content to GCS")
-        all_data_blob = bucket.blob(f"cache/notion_database_{database_id}.pkl")
+        all_data_blob = bucket.blob(f"cache/data_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(all_documents, file_buffer)
             file_buffer.seek(0)
@@ -342,7 +347,7 @@ def cache_notion_database(database_id, custom_name=None):
             return {
                 "success": True,
                 "partial": True,
-                "database_id": database_id,
+                "notion_id": database_id,
                 "title": database_title,
                 "pages_found": len(page_ids),
                 "chunks": len(nodes),
@@ -352,7 +357,7 @@ def cache_notion_database(database_id, custom_name=None):
             }
             
         current_app.logger.info(f"Saving vector index to GCS")
-        all_index_blob = bucket.blob(f"cache/vector_database_{database_id}.pkl")
+        all_index_blob = bucket.blob(f"cache/vector_index_{item_id}.pkl")
         with io.BytesIO() as file_buffer:
             pickle.dump(index, file_buffer)
             file_buffer.seek(0)
@@ -363,7 +368,7 @@ def cache_notion_database(database_id, custom_name=None):
         
         return {
             "success": True,
-            "database_id": database_id,
+            "notion_id": database_id,
             "title": database_title,
             "pages_found": len(page_ids),
             "chunks": len(nodes),
@@ -380,19 +385,37 @@ def cache_notion_database(database_id, custom_name=None):
 
 def download_blob_to_memory(blob_name):
     """Download a blob from GCS to memory."""
-    try:
-        client = get_storage_client()
-        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
-        bucket = client.bucket(bucket_name)
-        blob = bucket.blob(blob_name)
-        
-        with io.BytesIO() as file_buffer:
-            blob.download_to_file(file_buffer)
-            file_buffer.seek(0)
-            return pickle.load(file_buffer)
-    except Exception as e:
-        current_app.logger.error(f"Error downloading blob {blob_name}: {str(e)}")
-        raise
+    max_retries = 3
+    retry_delay = 1  # seconds
+    
+    for attempt in range(max_retries):
+        try:
+            client = get_storage_client()
+            bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+            if not bucket_name:
+                raise ValueError("GCS_BUCKET_NAME environment variable or config not set")
+                
+            bucket = client.bucket(bucket_name)
+            blob = bucket.blob(blob_name)
+
+            if not blob.exists():
+                raise FileNotFoundError(f"Blob {blob_name} does not exist in bucket {bucket_name}")
+            
+            with io.BytesIO() as file_buffer:
+                blob.download_to_file(file_buffer)
+                file_buffer.seek(0)
+                return pickle.load(file_buffer)
+                
+        except FileNotFoundError:
+            current_app.logger.error(f"Blob {blob_name} not found in bucket {bucket_name}")
+            raise
+        except Exception as e:
+            if attempt < max_retries - 1:
+                current_app.logger.warning(f"Error downloading blob {blob_name} (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                time.sleep(retry_delay)
+            else:
+                current_app.logger.error(f"Failed to download blob {blob_name} after {max_retries} attempts: {str(e)}")
+                raise
 
 def query_cached_notion(page_id, query_text):
     """Query a cached Notion page from GCS bucket."""

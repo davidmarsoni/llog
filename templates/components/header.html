@@ -9,26 +9,10 @@
       </a>
       
       <nav class="hidden md:flex items-center space-x-8">
-        {% set navLinks = [
-          {'name': 'Home', 'href': url_for('main.home')},
-          {'name': 'Add Files', 'href': url_for('file_storage.add_files')},
-          {'name': 'See Cached Content', 'href': url_for('file_storage.view_files')},
-          {'name': 'AI Assistant', 'href': url_for('chatbot.chatbot_page')}
-        ] %}
-        
-        {% for link in navLinks %}
-          <a
-            href="{{ link.href }}"
-            class="text-sm font-medium transition-colors hover:text-blue-600
-                  {% if request.path == link.href %}
-                    text-blue-600 border-b-2 border-blue-600
-                  {% else %}
-                    text-gray-600
-                  {% endif %}"
-          >
-            {{ link.name }}
-          </a>
-        {% endfor %}
+        <a href="{{ url_for('main.home') }}" class="text-sm font-medium transition-colors hover:text-blue-600 {% if request.endpoint == 'main.home' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600{% endif %}">Home</a>
+        <a href="{{ url_for('file_storage.add_files') }}" class="text-sm font-medium transition-colors hover:text-blue-600 {% if request.endpoint == 'file_storage.add_files' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600{% endif %}">Add Files</a>
+        <a href="{{ url_for('file_storage.view_files') }}" class="text-sm font-medium transition-colors hover:text-blue-600 {% if request.endpoint == 'file_storage.view_files' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600{% endif %}">See Cached Content</a>
+        <a href="{{ url_for('chatbot.chatbot_page') }}" class="text-sm font-medium transition-colors hover:text-blue-600 {% if request.endpoint == 'chatbot.chatbot_page' %}text-blue-600 border-b-2 border-blue-600{% else %}text-gray-600{% endif %}">AI Assistant</a>
       </nav>
     </div>
   </div>

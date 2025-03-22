@@ -127,6 +127,39 @@
   .notion-form-grid {
     @apply grid grid-cols-1 md:grid-cols-2 gap-6;
   }
+
+  /* Loading animation styles */
+  .page-loading {
+    @apply transition-opacity duration-200;
+  }
+
+  .htmx-request-in-flight .page-loading {
+    @apply opacity-50;
+  }
+
+  .htmx-request-in-flight .loading-indicator {
+    @apply opacity-100;
+  }
+  
+  .loading-indicator {
+    @apply opacity-0 transition-opacity duration-200;
+  }
+
+  /* Progress bar animation */
+  @keyframes progress-loading {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .progress-bar-animated {
+    @apply relative overflow-hidden;
+  }
+
+  .progress-bar-animated::after {
+    content: "";
+    @apply absolute inset-0 bg-blue-400/30;
+    animation: progress-loading 1s infinite;
+  }
 }
 
 @layer utilities {

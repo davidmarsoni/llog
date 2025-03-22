@@ -39,6 +39,7 @@ def extract_auto_metadata(text_content):
         # Create the prompt for metadata extraction
         prompt = f"""
         Analyze the following document content and extract key metadata.
+        The first element of each list should be the most important.
         Return ONLY a JSON object with these fields:
         - themes: List of 3-5 main themes
         - topics: List of 5-10 specific topics covered

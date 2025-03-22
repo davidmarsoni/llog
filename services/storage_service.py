@@ -1,20 +1,38 @@
 """
 Storage service for handling Google Cloud Storage operations
 """
+import uuid
 from flask import current_app
 from google.cloud import storage
 import os
 import io
 import pickle
+import time
 
 def get_storage_client():
     """Get a Google Cloud Storage client."""
     try:
         # First try using Application Default Credentials
-        return storage.Client()
+        client = storage.Client()
+        
+        # Ensure the bucket exists and we can access it
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        if not bucket_name:
+            raise ValueError("GCS_BUCKET_NAME environment variable or config not set")
+            
+        bucket = client.bucket(bucket_name)
+        if not bucket.exists():
+            current_app.logger.info(f"Creating bucket {bucket_name}")
+            bucket.create()
+            
+        return client
     except Exception as e:
         current_app.logger.error(f"Error initializing storage client: {str(e)}")
         raise
+
+def generate_uuid():
+    """Generate a new unique uuid"""
+    return str(uuid.uuid4())
 
 def get_all_files():
     """Get a list of all files in the storage bucket."""
@@ -117,11 +135,14 @@ def get_file_metadata(file_id):
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
         bucket = client.bucket(bucket_name)
         
+        # Clean up the file_id by removing any cache/ or .pkl suffix
+        clean_id = file_id.replace('cache/', '').replace('.pkl', '')
+        
         # Look for metadata in all possible locations
         metadata_paths = [
-            f"cache/metadata_{file_id}.pkl",
-            f"cache/metadata_db_{file_id}.pkl",
-            f"cache/metadata_doc_{file_id}.pkl"
+            f"cache/metadata_{clean_id}.pkl",
+            f"cache/metadata_db_{clean_id}.pkl",
+            f"cache/metadata_doc_{clean_id}.pkl"
         ]
         
         metadata = None
@@ -140,10 +161,10 @@ def get_file_metadata(file_id):
         if metadata:
             # Add the blob path to the metadata
             metadata['_storage_path'] = found_path
-            current_app.logger.info(f"Retrieved metadata for {file_id} from {found_path}")
+            current_app.logger.info(f"Retrieved metadata for {clean_id} from {found_path}")
             return metadata
         else:
-            current_app.logger.warning(f"No metadata found for file ID: {file_id}")
+            current_app.logger.warning(f"No metadata found for file ID: {clean_id}")
             return None
             
     except Exception as e:

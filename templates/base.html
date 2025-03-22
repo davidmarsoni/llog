@@ -5,9 +5,45 @@
         <title>{% block title %}{% endblock %}</title>
         <!-- Add the Tailwind CSS file -->
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind.css')}}" />
+        <!-- Add HTMX for dynamic page updates -->
+        <script src="https://unpkg.com/htmx.org@1.9.11" crossorigin="anonymous"></script>
+        <!-- Add event handlers for HTMX -->
+        <script>
+            document.body.addEventListener('htmx:configRequest', function(evt) {
+                // Add CSRF token if available
+                let token = document.querySelector('meta[name="csrf-token"]');
+                if (token) {
+                    evt.detail.headers['X-CSRFToken'] = token.content;
+                }
+            });
+
+            document.body.addEventListener('htmx:beforeRequest', function(evt) {
+                document.body.classList.add('htmx-request-in-flight');
+            });
+
+            document.body.addEventListener('htmx:afterRequest', function(evt) {
+                document.body.classList.remove('htmx-request-in-flight');
+            });
+
+            document.body.addEventListener('htmx:responseError', function(evt) {
+                // Show error toast/alert
+                let alert = document.getElementById('global-alert');
+                if (alert) {
+                    alert.textContent = 'An error occurred. Please try again.';
+                    alert.classList.remove('hidden');
+                    setTimeout(() => alert.classList.add('hidden'), 3000);
+                }
+            });
+        </script>
     </head>
 
     <body class="bg-gray-100">
+        <!-- Global alert for errors -->
+        <div id="global-alert" class="fixed top-4 right-4 z-50 hidden p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-lg"></div>
+        
+        <!-- Loading indicator -->
+        <div id="loading-indicator" class="fixed top-0 left-0 w-full h-1 bg-blue-500 transition-all duration-300 transform scale-x-0 htmx-request-in-flight:scale-x-100"></div>
+        
         {% include 'components/header.html' %}
         <!-- Your content here -->
         <div class="container mx-auto">

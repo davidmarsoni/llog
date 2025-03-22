@@ -1,9 +1,10 @@
 """
 Chatbot routes for the application
 """
-from flask import Blueprint, render_template, request, jsonify, current_app, make_response
-from services.llm_service import get_llm_response, get_available_indexes
+from flask import Blueprint, render_template, request, jsonify, current_app, make_response, Response, stream_with_context, session
+from services.llm_service import get_llm_response, get_available_indexes, get_streaming_response
 import httpx
+import json
 
 # Create a Blueprint for chatbot routes
 chatbot_bp = Blueprint('chatbot', __name__, url_prefix='/chatbot')
@@ -16,12 +17,19 @@ def add_cache_headers(response):
     return response
 
 @chatbot_bp.route('/')
+@chatbot_bp.route('/chat')
 def chatbot_page():
     """Render the chatbot interface page."""
-    # Get available indexes for the chatbot
-    indexes = get_available_indexes()
-    response = make_response(render_template('chatbot.html', indexes=indexes))
-    return add_cache_headers(response)
+    try:
+        # Get available indexes for the chatbot
+        indexes = get_available_indexes()
+        response = make_response(render_template('chatbot.html', 
+                                               indexes=indexes,
+                                               messages=[]))  # Initialize empty messages
+        return add_cache_headers(response)
+    except Exception as e:
+        current_app.logger.error(f"Error accessing chatbot page: {str(e)}")
+        return make_response(jsonify({"error": str(e)}), 500)
 
 @chatbot_bp.route('/available-indexes')
 def available_indexes():
@@ -87,6 +95,80 @@ def chatbot_query():
         return add_cache_headers(make_response(jsonify({
             'error': f"Sorry, there was an error processing your request: {str(e)}"
         }), 500))
+
+@chatbot_bp.route("/stream-response", methods=["POST"])
+def stream_response():
+    """Stream the AI response word by word for real-time feedback"""
+    try:
+        data = request.json
+        query = data.get('query', '')
+        use_content = data.get('use_content', False)
+        content_ids = data.get('content_ids', [])
+        
+        def generate():
+            # Initial response header
+            yield "event: start\ndata: {}\n\n"
+            
+            try:
+                # Get response from LLM service
+                response_stream = get_streaming_response(query, use_content, content_ids)
+                
+                # Stream each word/chunk
+                for chunk in response_stream:
+                    yield f"data: {json.dumps({'text': chunk})}\n\n"
+                    
+                # End of response
+                yield "event: end\ndata: {}\n\n"
+            except Exception as e:
+                yield f"event: error\ndata: {json.dumps({'error': str(e)})}\n\n"
+        
+        return Response(
+            stream_with_context(generate()),
+            mimetype='text/event-stream',
+            headers={
+                'Cache-Control': 'no-cache',
+                'X-Accel-Buffering': 'no'
+            }
+        )
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in stream_response: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@chatbot_bp.route('/check-message-length')
+def check_message_length():
+    """Check the current message length."""
+    message = request.args.get('message', '')
+    length = len(message)
+    max_length = 2000
+    return f"{length}/{max_length}"
+
+@chatbot_bp.route('/send-message', methods=['POST'])
+def send_message():
+    """Process a message and return the chat update."""
+    try:
+        message = request.form.get('message', '').strip()
+        use_content = request.form.get('use_content', 'false').lower() == 'true'
+        content_ids = request.form.getlist('content_ids[]')
+        
+        if not message:
+            return "Please enter a message."
+            
+        # Get response from LLM
+        response = get_llm_response(
+            query=message,
+            use_context=use_content,
+            index_ids=content_ids if content_ids else None
+        )
+        
+        # Render the message pair template
+        return render_template('components/chat_messages.html',
+                             user_message=message,
+                             ai_response=response.get('answer', 'Sorry, no response was generated.'))
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error processing message: {str(e)}")
+        return f"Error: {str(e)}"
 
 @chatbot_bp.after_request
 def after_request(response):

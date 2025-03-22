@@ -6,134 +6,147 @@ import os
 from typing import List, Dict, Any
 from services.notion_service import download_blob_to_memory
 from services.llm.cache import get_available_indexes
+from services.storage_service import get_storage_client, get_file_metadata
+
+def _ensure_bucket_exists():
+    """Ensure the GCS bucket exists and is accessible."""
+    try:
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        if not bucket_name:
+            raise ValueError("GCS_BUCKET_NAME environment variable or config not set")
+            
+        bucket = client.bucket(bucket_name)
+        if not bucket.exists():
+            current_app.logger.info(f"Creating bucket {bucket_name}")
+            bucket.create()
+            
+        # Create the cache directory structure if it doesn't exist
+        cache_blob = bucket.blob('cache/')
+        if not cache_blob.exists():
+            current_app.logger.info("Initializing cache directory structure")
+            cache_blob.upload_from_string('')
+            
+        return True
+    except Exception as e:
+        current_app.logger.error(f"Error ensuring bucket exists: {str(e)}")
+        raise
 
 def get_content_metadata(index_id: str) -> Dict[str, Any]:
-    """
-    Get the full metadata for a specific content item.
-    
-    Args:
-        index_id (str): The ID of the content to retrieve metadata for
-        
-    Returns:
-        dict: Complete metadata including auto-generated metadata
-    """
+    """Get metadata for a specific content index."""
+    _ensure_bucket_exists()
     try:
-        # Determine the metadata blob path based on ID format
-        blob_paths = [
-            f"cache/metadata_{index_id}.pkl",  # Notion page
-            f"cache/metadata_db_{index_id}.pkl",  # Notion database
-            f"cache/metadata_doc_{index_id}.pkl"  # Document
-        ]
-        
-        for path in blob_paths:
-            try:
-                metadata = download_blob_to_memory(path)
-                current_app.logger.debug(f"Found metadata for {index_id} at {path}")
-                return metadata
-            except Exception:
-                pass
-                
-        current_app.logger.warning(f"No metadata found for index {index_id}")
-        return {}
-        
+        # Use the storage service method that handles different metadata formats
+        return get_file_metadata(index_id)
     except Exception as e:
         current_app.logger.error(f"Error getting content metadata: {str(e)}")
-        return {}
+        raise
+
+def _clean_id(index_id: str) -> str:
+    """Clean an ID by removing any potential prefixes."""
+    # Handle cases where the ID already contains a type prefix
+    if index_id.startswith('doc_'):
+        return index_id
+    if index_id.startswith('db_'):
+        return index_id
+    if index_id.startswith('page_'):
+        return index_id
+    return index_id
 
 def query_content(query: str, index_ids: List[str] = None, use_metadata_filtering: bool = False) -> Dict[str, Any]:
     """
-    Query cached content using vector search.
+    Query content across one or more indexes.
     
     Args:
-        query (str): The query to search for
-        index_ids (list, optional): List of specific index IDs to search in
-        use_metadata_filtering (bool): Whether to use auto-metadata for filtering/ranking
+        query (str): The query string
+        index_ids (List[str], optional): List of specific index IDs to query. If None, queries all available indexes.
+        use_metadata_filtering (bool, optional): Whether to use metadata for filtering results
         
     Returns:
-        dict: Search results with sources and metadata
+        Dict[str, Any]: Query results
     """
+    _ensure_bucket_exists()
     try:
-        # Find all available indexes if none specified
-        available_indexes = get_available_indexes()
+        if not index_ids:
+            # Get all available indexes if none specified
+            indexes = get_available_indexes()
+            index_ids = [idx['id'] for idx in indexes if idx]
         
-        if not available_indexes:
-            return {"error": "No cached content found"}
-        
-        # Filter indexes if specific ones requested
-        if index_ids:
-            indexes_to_query = [idx for idx in available_indexes if idx['id'] in index_ids]
-        else:
-            indexes_to_query = available_indexes
-        
-        if not indexes_to_query:
-            return {"error": "Specified indexes not found in cache"}
-        
-        # If using metadata filtering, we'll use it for query enhancement or post-processing
-        if use_metadata_filtering:
-            current_app.logger.info("Using metadata for enhanced searching")
-        
-        # Query each index and collect results
-        all_results = []
-        for idx_info in indexes_to_query:
+        results = []
+        for index_id in index_ids:
             try:
-                # Download index from GCS
-                index = download_blob_to_memory(idx_info['path'])
-                retriever = index.as_retriever(similarity_top_k=3)
+                # Clean the ID to handle any prefixes
+                clean_id = _clean_id(index_id)
+                current_app.logger.info(f"Querying content with ID: {clean_id}")
                 
-                # Get relevant nodes from the index
-                retrieved_nodes = retriever.retrieve(query)
+                # Try all possible vector index paths for this ID
+                client = get_storage_client()
+                bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+                bucket = client.bucket(bucket_name)
                 
-                # Add results with source information and metadata
-                for node in retrieved_nodes:
-                    # Get full metadata for this content if available
-                    content_id = idx_info['id']
-                    
-                    result = {
-                        "content": node.text,
-                        "score": node.score if hasattr(node, 'score') else None,
-                        "source": f"{idx_info['type']}:{idx_info['id']}",
-                        "title": idx_info['title'],
-                        "themes": idx_info.get('themes', []),
-                        "keywords": idx_info.get('keywords', [])
-                    }
-                    
-                    all_results.append(result)
-            
+                # Check if blobs exist before attempting to download
+                vector_paths = []
+                possible_paths = [
+                    f"cache/vector_index_{clean_id}.pkl",
+                    f"cache/vector_database_{clean_id}.pkl",
+                    f"cache/vector_document_{clean_id}.pkl"
+                ]
+                
+                for path in possible_paths:
+                    if bucket.blob(path).exists():
+                        vector_paths.append(path)
+                        current_app.logger.info(f"Found vector index at {path}")
+                
+                if not vector_paths:
+                    current_app.logger.warning(f"No vector index found for {clean_id}")
+                    continue
+                
+                # Try to load the vector index from all found paths
+                index = None
+                for path in vector_paths:
+                    try:
+                        index = download_blob_to_memory(path)
+                        if index:
+                            current_app.logger.info(f"Successfully loaded index from {path}")
+                            break
+                    except Exception as e:
+                        current_app.logger.warning(f"Error loading index from {path}: {str(e)}")
+                
+                if not index:
+                    current_app.logger.warning(f"Could not load any index for {clean_id}")
+                    continue
+                
+                # Create query engine and execute query
+                query_engine = index.as_query_engine()
+                response = query_engine.query(query)
+                
+                # Get metadata for this index
+                try:
+                    metadata = get_content_metadata(clean_id)
+                    title = metadata.get('title', f'Content {clean_id}')
+                except Exception as e:
+                    current_app.logger.warning(f"Could not get metadata for {clean_id}: {str(e)}")
+                    title = f"Content {clean_id}"
+                
+                results.append({
+                    "index_id": clean_id,
+                    "title": title,
+                    "response": str(response)
+                })
+                
             except Exception as e:
-                current_app.logger.error(f"Error querying index {idx_info['id']}: {str(e)}")
+                current_app.logger.error(f"Error querying index {index_id}: {str(e)}")
                 continue
         
-        # Sort results by relevance score (if available)
-        all_results.sort(key=lambda x: x.get("score", 0) or 0, reverse=True)
-        
-        # If using metadata filtering, we can boost results that match key themes/topics
-        if use_metadata_filtering and query:
-            # This is a simple boost mechanism; could be enhanced with more sophisticated methods
-            query_lower = query.lower()
-            for result in all_results:
-                boost = 0
-                # Check if query terms match themes/keywords
-                for theme in result.get('themes', []):
-                    if theme.lower() in query_lower or query_lower in theme.lower():
-                        boost += 0.1
-                for keyword in result.get('keywords', []):
-                    if keyword.lower() in query_lower or query_lower in keyword.lower():
-                        boost += 0.05
-                
-                # Apply the boost to the score
-                if boost > 0 and 'score' in result and result['score'] is not None:
-                    result['score'] = result['score'] * (1 + boost)
+        if not results:
+            raise ValueError("No results found for query across available indexes")
             
-            # Re-sort after boosting
-            all_results.sort(key=lambda x: x.get("score", 0) or 0, reverse=True)
-        
         return {
-            "results": all_results,
+            "success": True,
             "query": query,
-            "total_results": len(all_results),
-            "metadata_enhanced": use_metadata_filtering
+            "results": results
         }
-    
+        
     except Exception as e:
-        current_app.logger.error(f"Error querying cached content: {str(e)}")
-        return {"error": str(e)}
+        current_app.logger.error(f"Error in query_content: {str(e)}")
+        raise

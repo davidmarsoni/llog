@@ -2,6 +2,8 @@
 {% block title %}View Cached Content{% endblock %}
 {% block content %}
 <div class="container mx-auto px-4 py-8">
+    <!-- Main content - no longer hidden behind a loading screen -->
+    <div id="main-content">
     <div class="mb-6 flex flex-wrap items-center justify-between">
         <h1 class="text-3xl font-bold">Cached Content</h1>
         <div class="flex space-x-2">
@@ -29,19 +31,33 @@
             <p class="text-gray-500 text-sm">Narrow down your search with these filters</p>
         </div>
         
-        <form id="filter-form" method="get" action="{{ url_for('file_storage.view_files') }}">
+        <form id="filter-form" 
+              hx-get="{{ url_for('file_storage.filtered_content') }}" 
+              hx-target="#content-area" 
+              hx-push-url="true"
+              hx-boost="true"
+              hx-indicator="#loading-indicator"
+              hx-trigger="change from:select, keyup[target.name=='title'] changed delay:400ms from:input[name='title'], submit from:form">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="space-y-2">
                     <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-                    <input type="text" name="title" id="title" value="{{ filter_title }}" 
+                    <input type="text" 
+                           name="title" 
+                           id="title" 
+                           value="{{ filter_title }}"
                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
-                           placeholder="Search by title...">
+                           placeholder="Search by title..."
+                           hx-trigger="keyup changed delay:400ms"
+                           hx-include="[name='type'],[name='folder'],[name='per_page']">
                 </div>
                 
                 <div class="space-y-2">
                     <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
-                    <select name="type" id="type" 
-                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <select name="type" 
+                            id="type" 
+                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            hx-trigger="change"
+                            hx-include="[name='title'],[name='folder'],[name='per_page']">
                         <option value="" {% if filter_type == '' %}selected{% endif %}>All Types</option>
                         <option value="page" {% if filter_type == 'page' %}selected{% endif %}>Notion Page</option>
                         <option value="database" {% if filter_type == 'database' %}selected{% endif %}>Notion Database</option>
@@ -51,160 +67,69 @@
                         <option value="markdown" {% if filter_type == 'markdown' %}selected{% endif %}>Markdown</option>
                     </select>
                 </div>
+
+                <div class="space-y-2">
+                    <label for="folder" class="block text-sm font-medium text-gray-700">Folder</label>
+                    <select name="folder" 
+                            id="folder"
+                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            hx-trigger="change"
+                            hx-include="[name='title'],[name='type'],[name='per_page']">
+                        {% for folder in folders %}
+                            <option value="{{ folder.path }}" {% if filter_folder == folder.path %}selected{% endif %}>
+                                {% if folder.path == '' %}
+                                    Root
+                                {% else %}
+                                    {{ folder.path }}
+                                {% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
                 
                 <div class="space-y-2">
                     <label for="per_page" class="block text-sm font-medium text-gray-700">Items Per Page</label>
-                    <select name="per_page" id="per_page"
-                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <select name="per_page" 
+                            id="per_page"
+                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                            hx-trigger="change"
+                            hx-include="[name='title'],[name='type'],[name='folder']">
                         <option value="5" {% if per_page == 5 %}selected{% endif %}>5</option>
                         <option value="10" {% if per_page == 10 %}selected{% endif %}>10</option>
                         <option value="25" {% if per_page == 25 %}selected{% endif %}>25</option>
                         <option value="50" {% if per_page == 50 %}selected{% endif %}>50</option>
                     </select>
                 </div>
-                
-                <div class="flex items-end space-x-2">
-                    <a href="{{ url_for('file_storage.view_files') }}" 
-                       class="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-center text-gray-800 font-medium rounded-md">
-                        Clear
-                    </a>
-                </div>
+            </div>
+
+            <!-- Include current folder and page parameters -->
+            {% if current_folder %}
+                <input type="hidden" name="folder" value="{{ current_folder }}">
+            {% endif %}
+            <input type="hidden" name="page" value="1">
+
+            <!-- Clear filters button -->
+            <div class="flex justify-end mt-4">
+                <button type="button" 
+                        onclick="clearFilters()"
+                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md">
+                    Clear Filters
+                </button>
             </div>
         </form>
     </div>
-
-    <!-- Card for content list -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="px-6 py-4 border-b">
-            <h2 class="text-xl font-bold">Your Content</h2>
-            <p class="text-gray-500 text-sm">Manage your cached content</p>
-        </div>
+    
+    <!-- Content area with inline loading state that will be updated by HTMX -->
+    <div id="content-area" class="relative">
+        {% include "components/content_table.html" %}
         
-        {% if total_items == 0 %}
-            <div class="p-6 text-center text-gray-500">
-                <p class="mb-4">No cached content found.</p>
-                <a href="{{ url_for('file_storage.add_files') }}" class="text-blue-500 hover:text-blue-700">
-                    Add some content to get started
-                </a>
+        <!-- Inline loading indicator (only shown during HTMX requests) -->
+        <div id="loading-indicator" class="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center" style="display: none;">
+            <div class="text-center">
+                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
+                <p class="text-gray-700 mt-2">Loading...</p>
             </div>
-        {% else %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for item in content_indexes %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ item.title }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                    {{ 'bg-purple-100 text-purple-800' if item.type == 'page' else 
-                                       'bg-green-100 text-green-800' if item.type == 'database' else 
-                                       'bg-blue-100 text-blue-800' if item.type == 'pdf' else 
-                                       'bg-yellow-100 text-yellow-800' }}">
-                                    {{ item.type }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm text-gray-500">
-                                    {{ item.id }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap">
-                                <div class="flex justify-end space-x-2">
-                                    <a href="{{ url_for('file_storage.view_metadata', file_id=item.id) }}" 
-                                       class="text-blue-600 hover:text-blue-800 px-2 py-1 text-sm font-medium">
-                                        Metadata
-                                    </a>
-                                    {% if item.type == 'page' or item.type == 'database' %}
-                                        <form action="{{ url_for('file_storage.refresh_item', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post" class="inline">
-                                            <input type="hidden" name="item_id" value="{{ item.id }}">
-                                            <input type="hidden" name="item_type" value="{{ item.type }}">
-                                            <input type="hidden" name="custom_name" value="{{ item.title }}">
-                                            <button type="submit" class="text-green-600 hover:text-green-800 px-2 py-1 text-sm font-medium">Refresh</button>
-                                        </form>
-                                    {% endif %}
-                                    <form action="{{ url_for('file_storage.delete_file', filename=item.id, page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post" class="inline delete-form" data-title="{{ item.title }}">
-                                        <button type="button" class="text-red-600 hover:text-red-800 px-2 py-1 text-sm font-medium delete-btn">Delete</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            
-            <!-- Pagination footer with page numbers -->
-            <div class="px-6 py-4 border-t flex justify-between items-center">
-                <div class="text-sm text-gray-500">
-                    Showing <span class="font-medium">{{ ((page - 1) * per_page) + 1 }}</span> to 
-                    <span class="font-medium">{{ min(page * per_page, total_items) }}</span> of 
-                    <span class="font-medium">{{ total_items }}</span> results
-                </div>
-                
-                {% if total_pages > 1 %}
-                <nav class="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <!-- First page -->
-                    <a href="{{ url_for('file_storage.view_files', page=1, per_page=per_page, title=filter_title, type=filter_type) }}" 
-                       class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium 
-                              {{ 'text-gray-300 cursor-not-allowed' if page == 1 else 'text-gray-500 hover:bg-gray-50' }}">
-                        <span class="sr-only">First</span>
-                        <span>&laquo;</span>
-                    </a>
-                    
-                    <!-- Previous page -->
-                    <a href="{{ url_for('file_storage.view_files', page=page-1, per_page=per_page, title=filter_title, type=filter_type) if page > 1 else '#' }}" 
-                       class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium 
-                              {{ 'text-gray-300 cursor-not-allowed' if page == 1 else 'text-gray-500 hover:bg-gray-50' }}">
-                        <span class="sr-only">Previous</span>
-                        <span>&lsaquo;</span>
-                    </a>
-                    
-                    <!-- Page numbers -->
-                    {% set start_page = [(page - 2), 1]|max %}
-                    {% set end_page = [(start_page + 4), total_pages]|min %}
-                    {% set start_page = [(end_page - 4), 1]|max %}
-                    
-                    {% for p in range(start_page, end_page + 1) %}
-                        <a href="{{ url_for('file_storage.view_files', page=p, per_page=per_page, title=filter_title, type=filter_type) }}" 
-                           class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium 
-                                  {{ 'bg-blue-50 border-blue-500 text-blue-600' if p == page else 'bg-white text-gray-700 hover:bg-gray-50' }}">
-                            {{ p }}
-                        </a>
-                    {% endfor %}
-                    
-                    <!-- Next page -->
-                    <a href="{{ url_for('file_storage.view_files', page=page+1, per_page=per_page, title=filter_title, type=filter_type) if page < total_pages else '#' }}" 
-                       class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium 
-                              {{ 'text-gray-300 cursor-not-allowed' if page == total_pages else 'text-gray-500 hover:bg-gray-50' }}">
-                        <span class="sr-only">Next</span>
-                        <span>&rsaquo;</span>
-                    </a>
-                    
-                    <!-- Last page -->
-                    <a href="{{ url_for('file_storage.view_files', page=total_pages, per_page=per_page, title=filter_title, type=filter_type) }}" 
-                       class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium 
-                              {{ 'text-gray-300 cursor-not-allowed' if page == total_pages else 'text-gray-500 hover:bg-gray-50' }}">
-                        <span class="sr-only">Last</span>
-                        <span>&raquo;</span>
-                    </a>
-                </nav>
-                {% endif %}
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 
@@ -234,88 +159,347 @@
     </div>
 </div>
 
+<!-- Create Folder Modal -->
+<div id="create-folder-modal" class="fixed inset-0 flex items-center justify-center hidden z-50">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+        <div class="modal-content py-6 px-8">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-xl font-bold">Create New Folder</p>
+                <button class="modal-close cursor-pointer z-50" onclick="closeModal('create-folder-modal')">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="{{ url_for('file_storage.create_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+                <div class="mb-4">
+                    <label for="folder_name" class="block text-sm font-medium text-gray-700 mb-1">Folder Name</label>
+                    <input type="text" name="folder_name" id="folder_name" required 
+                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <input type="hidden" name="parent_path" id="parent_path" value="{{ current_folder }}">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="closeModal('create-folder-modal')" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-medium rounded-md mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md">
+                        Create
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Rename Folder Modal -->
+<div id="rename-folder-modal" class="fixed inset-0 flex items-center justify-center hidden z-50">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+        <div class="modal-content py-6 px-8">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-xl font-bold">Rename Folder</p>
+                <button class="modal-close cursor-pointer z-50" onclick="closeModal('rename-folder-modal')">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="{{ url_for('file_storage.rename_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-4">Renaming folder: <span id="current-folder-name" class="font-medium"></span></p>
+                    <label for="new_name" class="block text-sm font-medium text-gray-700 mb-1">New Folder Name</label>
+                    <input type="text" name="new_name" id="new_name" required 
+                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    <input type="hidden" name="folder_path" id="folder_path" value="">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="closeModal('rename-folder-modal')" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-medium rounded-md mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md">
+                        Rename
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Folder Modal -->
+<div id="delete-folder-modal" class="fixed inset-0 flex items-center justify-center hidden z-50">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+        <div class="modal-content py-6 px-8">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-xl font-bold">Delete Folder</p>
+                <button class="modal-close cursor-pointer z-50" onclick="closeModal('delete-folder-modal')">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="{{ url_for('file_storage.delete_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-4">Deleting folder: <span id="delete-folder-name" class="font-medium"></span></p>
+                    <p class="bg-yellow-50 text-yellow-700 p-4 rounded border-l-4 border-yellow-400">
+                        <strong>Note:</strong> All items in this folder will be moved to the parent folder.
+                    </p>
+                    <input type="hidden" name="folder_path" id="delete_folder_path" value="">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="closeModal('delete-folder-modal')" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-medium rounded-md mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md">
+                        Delete Folder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Move Item Modal -->
+<div id="move-item-modal" class="fixed inset-0 flex items-center justify-center hidden z-50">
+    <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-lg z-50 overflow-y-auto">
+        <div class="modal-content py-6 px-8">
+            <div class="flex justify-between items-center pb-3">
+                <p class="text-xl font-bold">Move Item</p>
+                <button class="modal-close cursor-pointer z-50" onclick="closeModal('move-item-modal')">
+                    <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+                        <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+                    </svg>
+                </button>
+            </div>
+            <form action="{{ url_for('file_storage.move_item') }}" method="post">
+                <div class="mb-4">
+                    <p class="text-sm text-gray-600 mb-4">Moving item: <span id="item-name" class="font-medium"></span></p>
+                    <label for="folder_path" class="block text-sm font-medium text-gray-700 mb-1">Select Destination Folder</label>
+                    <select name="folder_path" id="folder_path" 
+                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Root</option>
+                        {% for folder in folders %}
+                            {% if folder.path != '' %}
+                                <option value="{{ folder.path }}">{{ folder.path }}</option>
+                            {% endif %}
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="item_id" value="">
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button type="button" onclick="closeModal('move-item-modal')" 
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-medium rounded-md mr-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md">
+                        Move
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+// Defer all initialization until after DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle delete modal functionality
-    const modal = document.getElementById('delete-modal');
-    const closeModalBtn = document.getElementById('modal-close');
-    const cancelBtn = document.getElementById('modal-cancel');
-    const confirmBtn = document.getElementById('modal-confirm');
-    const modalText = document.getElementById('modal-text');
-    let currentForm = null;
-    
-    // Open modal when delete button is clicked
-    document.querySelectorAll('.delete-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            currentForm = this.closest('.delete-form');
-            const title = currentForm.getAttribute('data-title');
-            modalText.textContent = `Are you sure you want to delete "${title}"?`;
-            modal.classList.remove('hidden');
-        });
-    });
-    
-    // Close modal
-    function closeModal() {
-        modal.classList.add('hidden');
-        currentForm = null;
-    }
-    
-    closeModalBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
-    
-    // Submit form when confirmed
-    confirmBtn.addEventListener('click', function() {
-        if (currentForm) {
-            currentForm.submit();
-        }
-        closeModal();
-    });
-    
-    // Close modal when clicking outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal || e.target.classList.contains('modal-overlay')) {
-            closeModal();
-        }
-    });
-    
-    // Close modal with ESC key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
-    
-    // Auto-submit on filter changes (for automatic filtering)
+    initializeUI();
+});
+
+// Function to initialize UI elements and event handlers
+function initializeUI() {
+    // Configure filter form for proper HTMX handling
     const filterForm = document.getElementById('filter-form');
-    const titleInput = document.getElementById('title');
-    const typeSelect = document.getElementById('type');
-    const perPageSelect = document.getElementById('per_page');
-    
-    // Add input event listeners
-    titleInput.addEventListener('input', debounce(function() {
-        filterForm.submit();
-    }, 500));
-    
-    typeSelect.addEventListener('change', function() {
-        filterForm.submit();
+    const loadingIndicator = document.getElementById('loading-indicator');
+
+    if (filterForm) {
+        // Add event listener for all filter inputs
+        const filterInputs = document.querySelectorAll('#filter-form input, #filter-form select');
+        filterInputs.forEach(input => {
+            input.addEventListener('change', function() {
+                const pageInput = document.querySelector('#filter-form input[name="page"]');
+                if (pageInput) {
+                    pageInput.value = 1;
+                }
+            });
+        });
+        
+        // Debounce text input
+        const titleInput = document.getElementById('title');
+        if (titleInput) {
+            let typingTimer;
+            titleInput.addEventListener('input', function() {
+                clearTimeout(typingTimer);
+                if (loadingIndicator) loadingIndicator.style.display = 'none';
+            });
+        }
+    }
+
+    // Set up loading indicator events
+    if (loadingIndicator) {
+        document.body.addEventListener('htmx:beforeRequest', function() {
+            loadingIndicator.style.display = 'flex';
+        });
+        document.body.addEventListener('htmx:afterOnLoad', function() {
+            loadingIndicator.style.display = 'none';
+        });
+        document.body.addEventListener('htmx:error', function() {
+            loadingIndicator.style.display = 'none';
+        });
+    }
+
+    // Handle all button clicks through event delegation
+    document.addEventListener('click', function(e) {
+        // Handle delete buttons
+        if (e.target.closest('.delete-btn')) {
+            e.preventDefault();
+            const deleteForm = e.target.closest('.delete-form');
+            const itemTitle = deleteForm.dataset.title;
+            const modal = document.getElementById('delete-modal');
+            const modalText = document.getElementById('modal-text');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const closeBtn = document.getElementById('modal-close');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            modalText.textContent = `Are you sure you want to delete "${itemTitle}"?`;
+            modal.classList.remove('hidden');
+
+            // Handle confirm button
+            confirmBtn.onclick = function() {
+                deleteForm.submit();
+            };
+
+            // Handle close button
+            closeBtn.onclick = function() {
+                modal.classList.add('hidden');
+            };
+
+            // Handle cancel button
+            cancelBtn.onclick = function() {
+                modal.classList.add('hidden');
+            };
+
+            // Close on clicking overlay
+            modal.querySelector('.modal-overlay').onclick = function() {
+                modal.classList.add('hidden');
+            };
+        }
+
+        // Handle move buttons through event delegation
+        const moveButton = e.target.closest('button[onclick*="openMoveItemModal"]');
+        if (moveButton) {
+            e.preventDefault();
+            const itemId = moveButton.getAttribute('data-item-id') || moveButton.getAttribute('onclick').match(/'([^']*)',/)[1];
+            const itemTitle = moveButton.getAttribute('data-item-title') || moveButton.getAttribute('onclick').match(/, *'([^']*)'/)[1];
+            openMoveItemModal(itemId, itemTitle);
+        }
     });
-    
-    perPageSelect.addEventListener('change', function() {
-        filterForm.submit();
-    });
-    
-    // Debounce function to prevent too many submissions while typing
-    function debounce(func, wait) {
-        let timeout;
-        return function() {
-            const context = this;
-            const args = arguments;
-            clearTimeout(timeout);
-            timeout = setTimeout(function() {
-                func.apply(context, args);
-            }, wait);
-        };
+}
+
+// Re-initialize after HTMX content updates
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target.id === 'content-area') {
+        initializeUI();
     }
 });
+
+// General modal close function
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Open create folder modal
+function openCreateFolderModal(parentPath) {
+    const modal = document.getElementById('create-folder-modal');
+    if (modal) {
+        const input = modal.querySelector('input[name="parent_path"]');
+        if (input) input.value = parentPath || '';
+        modal.classList.remove('hidden');
+    }
+}
+
+// Open rename folder modal
+function openRenameFolderModal(folderPath) {
+    const modal = document.getElementById('rename-folder-modal');
+    if (modal) {
+        const input = modal.querySelector('input[name="folder_path"]');
+        const nameSpan = modal.querySelector('#current-folder-name');
+        if (input) input.value = folderPath || '';
+        if (nameSpan) nameSpan.textContent = folderPath || 'Root';
+        modal.classList.remove('hidden');
+    }
+}
+
+// Open move item modal
+function openMoveItemModal(itemId, itemTitle) {
+    const modal = document.getElementById('move-item-modal');
+    if (modal) {
+        const input = modal.querySelector('input[name="item_id"]');
+        const nameSpan = modal.querySelector('#item-name');
+        const form = modal.querySelector('form');
+        
+        if (input) input.value = itemId;
+        if (nameSpan) nameSpan.textContent = itemTitle;
+        
+        // Show the modal
+        modal.classList.remove('hidden');
+        
+        // Reset to root option and ensure form is ready
+        const select = modal.querySelector('select[name="folder_path"]');
+        if (select) {
+            select.value = '';
+        }
+    }
+}
+
+// Function to open delete folder modal
+function openDeleteFolderModal(folderPath) {
+    const modal = document.getElementById('delete-folder-modal');
+    if (modal) {
+        const input = modal.querySelector('input[name="folder_path"]');
+        const nameSpan = modal.querySelector('#delete-folder-name');
+        if (input) input.value = folderPath || '';
+        if (nameSpan) nameSpan.textContent = folderPath || 'Root';
+        modal.classList.remove('hidden');
+    }
+}
+
+// Function to clear all filters
+function clearFilters() {
+    const form = document.getElementById('filter-form');
+    if (form) {
+        // Reset form values
+        form.reset();
+        
+        // Reset specific inputs that might not be covered by form.reset()
+        const titleInput = form.querySelector('#title');
+        if (titleInput) titleInput.value = '';
+
+        const typeSelect = form.querySelector('#type');
+        if (typeSelect) typeSelect.value = '';
+
+        const folderSelect = form.querySelector('#folder');
+        if (folderSelect) folderSelect.selectedIndex = 0;
+
+        const perPageSelect = form.querySelector('#per_page');
+        if (perPageSelect) perPageSelect.value = '10';
+
+        const pageInput = form.querySelector('input[name="page"]');
+        if (pageInput) pageInput.value = '1';
+
+        // Submit the form using HTMX
+        if (window.htmx) {
+            htmx.trigger(form, 'submit');
+        }
+    }
+}
 </script>
 {% endblock %}
