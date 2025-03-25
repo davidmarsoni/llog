@@ -164,12 +164,20 @@
                                     Move
                                 </button>
                                 {% if item.type == 'page' or item.type == 'database' %}
-                                    <form action="{{ url_for('file_view.refresh_item', page=page, per_page=per_page, title=filter_title, type=filter_type, folder=current_folder) }}" method="post" class="inline">
+                                    <form action="{{ url_for('file_view.refresh_item', page=page, per_page=per_page, title=filter_title, type=filter_type, folder=current_folder) }}" 
+                                          method="post" 
+                                          class="inline refresh-form" 
+                                          data-item-title="{{ item.title }}"
+                                          hx-post="{{ url_for('file_view.refresh_item', page=page, per_page=per_page, title=filter_title, type=filter_type, folder=current_folder) }}"
+                                          hx-swap="none"
+                                          hx-trigger="none">
                                         <input type="hidden" name="item_id" value="{{ item.id }}">
                                         <input type="hidden" name="item_notion_id" value="{{ item.notion_id }}">
                                         <input type="hidden" name="item_type" value="{{ item.type }}">
                                         <input type="hidden" name="custom_name" value="{{ item.title }}">
-                                        <button type="submit" class="inline-flex items-center px-2.5 py-1.5 border border-green-300 text-sm leading-5 font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800 focus:outline-none focus:border-green-400 focus:shadow-outline-green transition ease-in-out duration-150">
+                                        <button type="button" 
+                                                class="refresh-btn inline-flex items-center px-2.5 py-1.5 border border-green-300 text-sm leading-5 font-medium rounded-md text-green-700 bg-green-50 hover:bg-green-100 hover:text-green-800 focus:outline-none focus:border-green-400 focus:shadow-outline-green transition ease-in-out duration-150"
+                                                onclick="refreshItem(this)">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
                                             </svg>

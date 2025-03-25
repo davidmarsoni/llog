@@ -148,9 +148,13 @@ def refresh_item():
     item_type = request.form.get('item_type', '')
     custom_name = request.form.get('custom_name', '')
     
+    success_message = ""
+    error_message = ""
+    
     try:
         if not item_notion_id:
-            flash("No Notion page/database ID provided")
+            error_message = "No Notion page/database ID provided"
+            flash(error_message)
             return redirect(url_for('file_storage.view_files'))
         
         current_app.logger.info(f"Refreshing {item_type} with ID: {item_notion_id} (UUID: {item_id})")
@@ -158,13 +162,16 @@ def refresh_item():
         if item_type == 'page':
             from services.notion_service import cache_notion_page
             result = cache_notion_page(item_notion_id, custom_name, item_id)
-            flash(f"Successfully refreshed Notion page '{result['title']}' with {result['chunks']} content chunks!")
+            success_message = f"Successfully refreshed Notion page '{result['title']}' with {result['chunks']} content chunks!"
+            flash(success_message)
         elif item_type == 'database':
             from services.notion_service import cache_notion_database
             result = cache_notion_database(item_notion_id, custom_name, item_id)
-            flash(f"Successfully refreshed Notion database '{result['title']}' with {result['pages_found']} pages!")
+            success_message = f"Successfully refreshed Notion database '{result['title']}' with {result['pages_found']} pages!"
+            flash(success_message)
         else:
-            flash(f"Unknown item type: {item_type}")
+            error_message = f"Unknown item type: {item_type}"
+            flash(error_message)
             return redirect(url_for('file_storage.view_files'))
         
         from services.llm_service import refresh_file_index_cache
@@ -172,9 +179,26 @@ def refresh_item():
         
     except Exception as e:
         current_app.logger.error(f"Error refreshing item: {str(e)}")
-        flash(f"Error refreshing item: {str(e)}")
+        error_message = f"Error refreshing item: {str(e)}"
+        flash(error_message)
     
-    # Redirect with pagination and filter parameters preserved
+    # Check if this is an HTMX request
+    if "HX-Request" in request.headers:
+        # For HTMX requests, return a notification that can be displayed
+        if error_message:
+            return jsonify({
+                "status": "error",
+                "message": error_message,
+                "title": custom_name or "Item"
+            }), 400
+        else:
+            return jsonify({
+                "status": "success",
+                "message": success_message,
+                "title": custom_name or "Item"
+            })
+    
+    # For regular requests, redirect with pagination and filter parameters preserved
     return redirect(url_for('file_storage.view_files', 
                            page=page, 
                            per_page=per_page,

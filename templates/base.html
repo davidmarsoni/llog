@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <meta charset="utf-8" />
-        <title>{% block title %}{% endblock %}</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}LLog{% endblock %}</title>
+        <link href="{{ url_for('static', filename='site.css') }}" rel="stylesheet">
         <!-- Add the Tailwind CSS file -->
         <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/tailwind.css')}}" />
         <!-- Add HTMX for dynamic page updates -->
-        <script src="https://unpkg.com/htmx.org@1.9.11" crossorigin="anonymous"></script>
+        <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+        <!-- Alpine.js for interactive UI components -->
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.0/dist/cdn.min.js"></script>
         <!-- Add event handlers for HTMX -->
         <script>
             document.body.addEventListener('htmx:configRequest', function(evt) {
@@ -35,6 +39,7 @@
                 }
             });
         </script>
+        {% block head %}{% endblock %}
     </head>
 
     <body class="bg-gray-100">

@@ -329,42 +329,100 @@
 // Defer all initialization until after DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeUI();
-    
-    // Set up refresh button loading state
+    setupRefreshCacheButton();
+});
+
+// Function to set up the main Refresh Cache button
+function setupRefreshCacheButton() {
     const refreshForm = document.getElementById('refresh-form');
     const refreshButton = document.getElementById('refresh-button');
     
     if (refreshForm && refreshButton) {
-        refreshForm.addEventListener('submit', function() {
-            // Save original button text
-            const originalText = refreshButton.textContent;
+        refreshForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
             
-            // Show loading spinner
-            refreshButton.innerHTML = `
-                <div class="inline-flex items-center">
-                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Refreshing...
+            // Create notification element
+            const notification = document.createElement('div');
+            
+            // Add class for styling and identification
+            notification.className = 'fixed right-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded shadow-md z-50 transform transition-transform duration-300 ease-in-out translate-x-full refresh-notification';
+            notification.style.maxWidth = '400px';
+            
+            // Initially position off-screen to measure height without affecting layout
+            notification.style.top = '-1000px';
+            notification.style.opacity = '0';
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <div class="mr-3">
+                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="font-bold">Refreshing Cache</p>
+                        <p class="text-sm">This may take a few moments...</p>
+                    </div>
                 </div>
             `;
             
-            // Disable button
-            refreshButton.disabled = true;
-            refreshButton.classList.add('opacity-75', 'pointer-events-none');
+            // Add data attribute to identify this as the main refresh notification
+            notification.dataset.type = "cache-refresh";
             
-            // Add a timeout to reset button if server takes too long
-            setTimeout(function() {
-                if (refreshButton) { // Check if element still exists
-                    refreshButton.innerHTML = originalText;
+            // Add the notification to the body to measure it
+            document.body.appendChild(notification);
+            
+            // Position the notification dynamically based on existing notifications
+            positionNotification(notification);
+            
+            // Make the notification visible with transition
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.classList.remove('translate-x-full');
+            }, 10);
+            
+            // Save the original button content
+            const originalContent = refreshButton.textContent;
+            
+            // Disable the button and show loading state
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Refreshing...
+            `;
+            refreshButton.classList.add('opacity-75', 'cursor-wait');
+            
+            // Now submit the form
+            refreshForm.submit();
+            
+            // Set a timeout to reset the button if the server takes too long
+            setTimeout(() => {
+                if (document.body.contains(refreshButton)) {
                     refreshButton.disabled = false;
-                    refreshButton.classList.remove('opacity-75', 'pointer-events-none');
+                    refreshButton.textContent = originalContent;
+                    refreshButton.classList.remove('opacity-75', 'cursor-wait');
                 }
-            }, 30000); // 30 seconds timeout
+                
+                // Remove the notification after timeout if it still exists
+                if (document.body.contains(notification)) {
+                    notification.classList.add('translate-x-full');
+                    setTimeout(() => {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                            
+                            // Reposition remaining notifications
+                            repositionAllNotifications();
+                        }
+                    }, 300);
+                }
+            }, 30000); // 30 second timeout
         });
     }
-});
+}
 
 // Function to initialize UI elements and event handlers
 function initializeUI() {
@@ -471,6 +529,150 @@ function initializeUI() {
                 console.error("Error extracting item data:", e);
             }
         }
+    });
+}
+
+// Function to refresh a Notion item
+function refreshItem(buttonElement) {
+    if (!buttonElement) return;
+    
+    // Get the form containing this button
+    const form = buttonElement.closest('form');
+    if (!form) return;
+    
+    // Get item information
+    const itemTitle = form.dataset.itemTitle || 'this item';
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    
+    // Add class for styling and identification
+    notification.className = 'fixed right-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded shadow-md z-50 transform transition-transform duration-300 ease-in-out translate-x-full refresh-notification';
+    notification.style.maxWidth = '400px';
+    
+    // Initially position off-screen to measure height without affecting layout
+    notification.style.top = '-1000px';
+    notification.style.opacity = '0';
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <div class="mr-3">
+                <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold">Refreshing ${itemTitle}</p>
+                <p class="text-sm">This may take a few moments...</p>
+            </div>
+        </div>
+    `;
+    
+    // Add data attribute to identify which item this notification is for
+    notification.dataset.itemId = form.querySelector('input[name="item_id"]').value;
+    
+    // Add the notification to the body to measure it
+    document.body.appendChild(notification);
+    
+    // Position the notification dynamically based on existing notifications
+    positionNotification(notification);
+    
+    // Make the notification visible with transition
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Save the original button content
+    const originalContent = buttonElement.innerHTML;
+    
+    // Disable the button and show loading state
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Refreshing...
+    `;
+    buttonElement.classList.add('opacity-75', 'cursor-wait');
+    
+    // Submit the form
+    form.submit();
+    
+    // Set a timeout to reset the button if the server takes too long
+    setTimeout(() => {
+        if (document.body.contains(buttonElement)) {
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = originalContent;
+            buttonElement.classList.remove('opacity-75', 'cursor-wait');
+        }
+        
+        // Remove the notification after timeout if it still exists
+        if (document.body.contains(notification)) {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                    
+                    // Reposition remaining notifications
+                    repositionAllNotifications();
+                }
+            }, 300);
+        }
+    }, 30000); // 30 second timeout
+}
+
+// Function to position a new notification based on existing ones
+function positionNotification(notification) {
+    // Get all existing notifications
+    const notifications = document.querySelectorAll('.refresh-notification');
+    
+    // Start position (margin from top)
+    let topPosition = 16; // Base margin from top
+    
+    // Find position for new notification
+    notifications.forEach(existingNotif => {
+        // Skip the notification we're currently positioning
+        if (existingNotif === notification) return;
+        
+        // Skip notifications that are being removed (have translate-x-full class)
+        if (existingNotif.classList.contains('translate-x-full')) return;
+        
+        // Get position and height of existing notification
+        const rect = existingNotif.getBoundingClientRect();
+        // Add the height plus a small gap (8px)
+        if (rect.top >= 0) { // Only consider visible notifications
+            topPosition = Math.max(topPosition, rect.bottom + 8);
+        }
+    });
+    
+    // Set the position for the new notification
+    notification.style.top = `${topPosition}px`;
+}
+
+// Function to reposition all notifications after one is removed
+function repositionAllNotifications() {
+    // Get all active notifications
+    const notifications = Array.from(document.querySelectorAll('.refresh-notification'))
+        .filter(n => !n.classList.contains('translate-x-full')); // Filter out ones being removed
+    
+    if (notifications.length === 0) return;
+    
+    // Sort notifications by their current top position
+    notifications.sort((a, b) => {
+        return parseInt(a.style.top) - parseInt(b.style.top);
+    });
+    
+    // Start position
+    let topPosition = 16;
+    
+    // Reposition each notification
+    notifications.forEach(notif => {
+        notif.style.top = `${topPosition}px`;
+        const rect = notif.getBoundingClientRect();
+        topPosition = rect.bottom + 8; // Height + gap
     });
 }
 
