@@ -314,18 +314,18 @@
                   hx-swap="innerHTML"
                   hx-indicator="#loading-indicator">
                 <div class="mb-4">
-                    <p class="text-sm text-gray-600 mb-4">Moving item: <span id="item-name" class="font-medium"></span></p>
-                    <label for="destination_folder_path" class="block text-sm font-medium text-gray-700 mb-1">Select Destination Folder</label>
-                    <select name="folder_path" id="destination_folder_path" required 
-                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">Root</option>
+                    <p class="text-sm text-gray-600 mb-4">Moving item: <span id="move-item-name" class="font-medium"></span></p>
+                    <label for="folder_path" class="block text-sm font-medium text-gray-700 mb-1">Select Destination Folder</label>
+                    <select name="folder_path" id="folder_path_select" 
+                            class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Root (No Folder)</option>
                         {% for folder in folders %}
                             {% if folder.path != '' %}
                                 <option value="{{ folder.path }}">{{ folder.path }}</option>
                             {% endif %}
                         {% endfor %}
                     </select>
-                    <input type="hidden" name="item_id" id="item_id" value="">
+                    <input type="hidden" name="item_id" id="move-item-id" value="">
                 </div>
                 <div class="flex justify-end pt-2">
                     <button type="button" onclick="closeModal('move-item-modal')" 
@@ -346,8 +346,53 @@
                     
                     if (moveForm && moveButton) {
                         moveForm.addEventListener('submit', function() {
-                            // Save original button text
-                            const originalText = moveButton.textContent;
+                            // Create notification element
+                            const notification = document.createElement('div');
+                            
+                            // Add class for styling and identification
+                            notification.className = 'fixed right-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded shadow-md z-50 transform transition-transform duration-300 ease-in-out translate-x-full refresh-notification';
+                            notification.style.maxWidth = '400px';
+                            
+                            // Initially position off-screen to measure height without affecting layout
+                            notification.style.top = '-1000px';
+                            notification.style.opacity = '0';
+                            
+                            // Get the item name
+                            const itemName = document.getElementById('move-item-name').textContent;
+                            
+                            notification.innerHTML = `
+                                <div class="flex items-center">
+                                    <div class="mr-3">
+                                        <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold">Moving Item</p>
+                                        <p class="text-sm">Moving ${itemName}...</p>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Add data attribute to identify this notification
+                            notification.dataset.type = "item-move";
+                            
+                            // Add the notification to the body
+                            document.body.appendChild(notification);
+                            
+                            // Position the notification dynamically based on existing notifications
+                            if (window.positionNotification) {
+                                window.positionNotification(notification);
+                            } else {
+                                notification.style.top = '16px';
+                            }
+                            
+                            // Make the notification visible with transition
+                            setTimeout(() => {
+                                notification.style.opacity = '1';
+                                notification.classList.remove('translate-x-full');
+                            }, 10);
                             
                             // Show loading spinner
                             moveButton.innerHTML = `
@@ -363,9 +408,50 @@
                             // Disable button
                             moveButton.disabled = true;
                             moveButton.classList.add('opacity-75', 'pointer-events-none');
+                            
+                            // Close the modal
+                            closeModal('move-item-modal');
+                            
+                            // Set a timeout to remove the notification after some time
+                            setTimeout(() => {
+                                if (document.body.contains(notification)) {
+                                    notification.classList.add('translate-x-full');
+                                    setTimeout(() => {
+                                        if (document.body.contains(notification)) {
+                                            document.body.removeChild(notification);
+                                            
+                                            // Reposition remaining notifications if function exists
+                                            if (window.repositionAllNotifications) {
+                                                window.repositionAllNotifications();
+                                            }
+                                        }
+                                    }, 300);
+                                }
+                            }, 8000); // 8 seconds timeout
                         });
                     }
                 });
+                
+                // Function to set up move item modal when a move button is clicked
+                window.openMoveItemModal = function(itemId, itemTitle) {
+                    const modal = document.getElementById('move-item-modal');
+                    if (modal) {
+                        const input = document.getElementById('move-item-id');
+                        const nameSpan = document.getElementById('move-item-name');
+                        
+                        if (input) input.value = itemId;
+                        if (nameSpan) nameSpan.textContent = itemTitle;
+                        
+                        // Reset to root option
+                        const select = document.getElementById('folder_path_select');
+                        if (select) {
+                            select.value = '';
+                        }
+                        
+                        // Show the modal
+                        modal.classList.remove('hidden');
+                    }
+                };
             </script>
         </div>
     </div>
