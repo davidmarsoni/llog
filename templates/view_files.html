@@ -466,9 +466,8 @@ function initializeUI() {
         });
     }
 
-    // Handle all button clicks through event delegation
+    // Handle regular delete buttons through event delegation
     document.addEventListener('click', function(e) {
-        // Handle delete buttons
         if (e.target.closest('.delete-btn')) {
             e.preventDefault();
             const deleteForm = e.target.closest('.delete-form');
@@ -507,29 +506,178 @@ function initializeUI() {
                 }
             }
         }
-
-        // Handle move buttons through event delegation
-        const moveButton = e.target.closest('button[onclick*="openMoveItemModal"]');
-        if (moveButton) {
-            e.preventDefault();
-            try {
-                const itemId = moveButton.getAttribute('data-item-id') || 
-                              (moveButton.getAttribute('onclick') && 
-                               moveButton.getAttribute('onclick').match(/'([^']*)',/) && 
-                               moveButton.getAttribute('onclick').match(/'([^']*)',/)[1]);
-                const itemTitle = moveButton.getAttribute('data-item-title') || 
-                                 (moveButton.getAttribute('onclick') && 
-                                  moveButton.getAttribute('onclick').match(/, *'([^']*)'/)) && 
-                                  moveButton.getAttribute('onclick').match(/, *'([^']*)'/)[1];
-                
-                if (itemId && itemTitle) {
-                    openMoveItemModal(itemId, itemTitle);
-                }
-            } catch (e) {
-                console.error("Error extracting item data:", e);
-            }
-        }
     });
+    
+    // Direct setup of folder management buttons
+    setupFolderManagementButtons();
+}
+
+// Function to set up folder management buttons with direct event handlers
+function setupFolderManagementButtons() {
+    // Set up create folder buttons
+    const createFolderButtons = document.querySelectorAll('[data-action="create-folder"]');
+    createFolderButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const parentPath = this.getAttribute('data-parent-path') || '';
+            openCreateFolderModal(parentPath);
+        });
+    });
+    
+    // Set up rename folder buttons
+    const renameFolderButtons = document.querySelectorAll('[data-action="rename-folder"]');
+    renameFolderButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const folderPath = this.getAttribute('data-folder-path') || '';
+            openRenameFolderModal(folderPath);
+        });
+    });
+    
+    // Set up delete folder buttons
+    const deleteFolderButtons = document.querySelectorAll('[data-action="delete-folder"]');
+    deleteFolderButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const folderPath = this.getAttribute('data-folder-path') || '';
+            openDeleteFolderModal(folderPath);
+        });
+    });
+    
+    // Set up move item buttons
+    const moveItemButtons = document.querySelectorAll('[data-action="move-item"]');
+    moveItemButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const itemId = this.getAttribute('data-item-id') || '';
+            const itemTitle = this.getAttribute('data-item-title') || 'this item';
+            openMoveItemModal(itemId, itemTitle);
+        });
+    });
+    
+    // Set up form submissions with visual feedback
+    setupModalFormSubmissions();
+}
+
+// Function to set up modal form submissions with visual feedback
+function setupModalFormSubmissions() {
+    // Create folder form submission
+    const createFolderForm = document.querySelector('#create-folder-modal form');
+    if (createFolderForm) {
+        createFolderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithFeedback(this, 'Creating folder...', 'Folder Creation');
+        });
+    }
+    
+    // Rename folder form submission
+    const renameFolderForm = document.querySelector('#rename-folder-modal form');
+    if (renameFolderForm) {
+        renameFolderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithFeedback(this, 'Renaming folder...', 'Folder Rename');
+        });
+    }
+    
+    // Delete folder form submission
+    const deleteFolderForm = document.querySelector('#delete-folder-modal form');
+    if (deleteFolderForm) {
+        deleteFolderForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithFeedback(this, 'Deleting folder...', 'Folder Deletion');
+        });
+    }
+    
+    // Move item form submission
+    const moveItemForm = document.querySelector('#move-item-modal form');
+    if (moveItemForm) {
+        moveItemForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            submitFormWithFeedback(this, 'Moving item...', 'Item Move');
+        });
+    }
+}
+
+// Function to submit a form with visual feedback
+function submitFormWithFeedback(form, actionText, operationType) {
+    // Create notification element
+    const notification = document.createElement('div');
+    
+    // Add class for styling and identification
+    notification.className = 'fixed right-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded shadow-md z-50 transform transition-transform duration-300 ease-in-out translate-x-full refresh-notification';
+    notification.style.maxWidth = '400px';
+    
+    // Initially position off-screen to measure height without affecting layout
+    notification.style.top = '-1000px';
+    notification.style.opacity = '0';
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <div class="mr-3">
+                <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold">${operationType}</p>
+                <p class="text-sm">${actionText}</p>
+            </div>
+        </div>
+    `;
+    
+    // Add data attribute to identify the operation
+    notification.dataset.type = `folder-operation-${operationType.toLowerCase().replace(' ', '-')}`;
+    
+    // Add the notification to the body
+    document.body.appendChild(notification);
+    
+    // Position the notification dynamically based on existing notifications
+    positionNotification(notification);
+    
+    // Make the notification visible with transition
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.classList.remove('translate-x-full');
+    }, 10);
+    
+    // Find submit button and show loading state
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalContent = submitButton ? submitButton.innerHTML : '';
+    
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            ${actionText}
+        `;
+        submitButton.classList.add('opacity-75', 'cursor-wait');
+    }
+    
+    // Close the modal
+    const modalId = form.closest('[id]').id;
+    closeModal(modalId);
+    
+    // Now submit the form
+    form.submit();
+    
+    // Set a timeout to remove the notification after a while
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                    
+                    // Reposition remaining notifications
+                    repositionAllNotifications();
+                }
+            }, 300);
+        }
+    }, 3000); // 3 seconds timeout
 }
 
 // Function to refresh a Notion item
