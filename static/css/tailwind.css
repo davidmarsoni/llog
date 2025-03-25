@@ -746,6 +746,10 @@ body {
   margin-bottom: -1px;
 }
 
+.-ml-1 {
+  margin-left: -0.25rem;
+}
+
 .mb-1 {
   margin-bottom: 0.25rem;
 }
@@ -890,16 +894,8 @@ body {
   height: 1.25rem;
 }
 
-.h-8 {
-  height: 2rem;
-}
-
 .h-80 {
   height: 20rem;
-}
-
-.h-full {
-  height: 100%;
 }
 
 .max-h-40 {
@@ -928,10 +924,6 @@ body {
 
 .w-5 {
   width: 1.25rem;
-}
-
-.w-8 {
-  width: 2rem;
 }
 
 .w-full {
@@ -979,6 +971,10 @@ body {
 
 .cursor-pointer {
   cursor: pointer;
+}
+
+.cursor-wait {
+  cursor: wait;
 }
 
 .resize-none {
@@ -1668,6 +1664,10 @@ body {
 
 .opacity-0 {
   opacity: 0;
+}
+
+.opacity-25 {
+  opacity: 0.25;
 }
 
 .opacity-50 {

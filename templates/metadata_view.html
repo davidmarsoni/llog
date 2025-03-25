@@ -96,7 +96,7 @@
         
         <div class="p-6">
             <form id="metadata-form" 
-                  hx-post="{{ url_for('file_storage.update_metadata', file_id=file_id) }}"
+                  hx-post="{{ url_for('file_metadata.update_metadata', file_id=file_id) }}"
                   hx-target="#alert-container"
                   hx-swap="outerHTML"
                   hx-trigger="submit"
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const fileId = document.querySelector('input[name="file_id"]').value;
         
         // Make API request to generate metadata
-        fetch(`{{ url_for("file_storage.generate_metadata", file_id=file_id) }}`, {
+        fetch(`{{ url_for('file_metadata.generate_metadata', file_id=file_id) }}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         // Send AJAX request
-        fetch('{{ url_for("file_storage.update_metadata", file_id=file_id) }}', {
+        fetch("{{ url_for('file_metadata.update_metadata', file_id=file_id) }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

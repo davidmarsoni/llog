@@ -291,18 +291,16 @@ def get_available_indexes(folder_path=None):
                     
                     # Get the item's folder path
                     item_folder = metadata.get('folder', '')
-
+                    
                     # Include item if:
                     # 1. No folder filter is applied (folder_path is None)
                     # 2. Item is exactly in the requested folder
-                    # 3. Item is in a subfolder of the requested folder
+                    # 3. Item is in a subfolder of the requested folder (item_folder starts with folder_path/)
                     should_include = (
                         folder_path is None or
                         item_folder == folder_path or
-                        (folder_path and item_folder and (
-                            item_folder.startswith(folder_path + '/') or
-                            folder_path.startswith(item_folder + '/')
-                        ))
+                        (folder_path and item_folder and 
+                         item_folder.startswith(folder_path + '/'))
                     )
                     
                     if should_include:

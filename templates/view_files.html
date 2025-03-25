@@ -10,9 +10,29 @@
             <a href="{{ url_for('file_storage.add_files') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow">
                 Add new Content
             </a>
-            <form action="{{ url_for('file_storage.refresh_cache') }}" method="post" class="inline">
-                <button type="submit" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow">Refresh Cache</button>
+            <form action="{{ url_for('file_view.refresh_cache') }}" method="post" class="inline" id="refresh-form">
+                <button type="submit" id="refresh-button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow">Refresh Cache</button>
             </form>
+            
+            <script>
+                // Immediate execution for the refresh button
+                document.addEventListener('DOMContentLoaded', function() {
+                    const refreshButton = document.getElementById('refresh-button');
+                    const refreshForm = document.getElementById('refresh-form');
+                    
+                    if (refreshButton && refreshForm) {
+                        refreshForm.onsubmit = function(e) {
+                            // Immediately change button appearance
+                            refreshButton.innerHTML = '<span class="flex items-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Refreshing...</span>';
+                            refreshButton.disabled = true;
+                            refreshButton.classList.add('opacity-75', 'cursor-wait');
+                            
+                            // Allow the form to submit
+                            return true;
+                        };
+                    }
+                });
+            </script>
         </div>
     </div>
 
@@ -32,7 +52,7 @@
         </div>
         
         <form id="filter-form" 
-              hx-get="{{ url_for('file_storage.filtered_content') }}" 
+              hx-get="{{ url_for('file_view.filtered_content') }}" 
               hx-target="#content-area" 
               hx-push-url="true"
               hx-boost="true"
@@ -172,7 +192,7 @@
                     </svg>
                 </button>
             </div>
-            <form action="{{ url_for('file_storage.create_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+            <form action="{{ url_for('folder_management.create_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
                 <div class="mb-4">
                     <label for="folder_name" class="block text-sm font-medium text-gray-700 mb-1">Folder Name</label>
                     <input type="text" name="folder_name" id="folder_name" required 
@@ -206,7 +226,7 @@
                     </svg>
                 </button>
             </div>
-            <form action="{{ url_for('file_storage.rename_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+            <form action="{{ url_for('folder_management.rename_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-4">Renaming folder: <span id="current-folder-name" class="font-medium"></span></p>
                     <label for="new_name" class="block text-sm font-medium text-gray-700 mb-1">New Folder Name</label>
@@ -241,7 +261,7 @@
                     </svg>
                 </button>
             </div>
-            <form action="{{ url_for('file_storage.delete_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
+            <form action="{{ url_for('folder_management.delete_folder_route', page=page, per_page=per_page, title=filter_title, type=filter_type) }}" method="post">
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-4">Deleting folder: <span id="delete-folder-name" class="font-medium"></span></p>
                     <p class="bg-yellow-50 text-yellow-700 p-4 rounded border-l-4 border-yellow-400">
@@ -276,7 +296,7 @@
                     </svg>
                 </button>
             </div>
-            <form action="{{ url_for('file_storage.move_item') }}" method="post">
+            <form action="{{ url_for('file_view.move_item') }}" method="post">
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-4">Moving item: <span id="item-name" class="font-medium"></span></p>
                     <label for="folder_path" class="block text-sm font-medium text-gray-700 mb-1">Select Destination Folder</label>
@@ -309,6 +329,41 @@
 // Defer all initialization until after DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     initializeUI();
+    
+    // Set up refresh button loading state
+    const refreshForm = document.getElementById('refresh-form');
+    const refreshButton = document.getElementById('refresh-button');
+    
+    if (refreshForm && refreshButton) {
+        refreshForm.addEventListener('submit', function() {
+            // Save original button text
+            const originalText = refreshButton.textContent;
+            
+            // Show loading spinner
+            refreshButton.innerHTML = `
+                <div class="inline-flex items-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Refreshing...
+                </div>
+            `;
+            
+            // Disable button
+            refreshButton.disabled = true;
+            refreshButton.classList.add('opacity-75', 'pointer-events-none');
+            
+            // Add a timeout to reset button if server takes too long
+            setTimeout(function() {
+                if (refreshButton) { // Check if element still exists
+                    refreshButton.innerHTML = originalText;
+                    refreshButton.disabled = false;
+                    refreshButton.classList.remove('opacity-75', 'pointer-events-none');
+                }
+            }, 30000); // 30 seconds timeout
+        });
+    }
 });
 
 // Function to initialize UI elements and event handlers
@@ -366,37 +421,55 @@ function initializeUI() {
             const closeBtn = document.getElementById('modal-close');
             const cancelBtn = document.getElementById('modal-cancel');
 
-            modalText.textContent = `Are you sure you want to delete "${itemTitle}"?`;
-            modal.classList.remove('hidden');
+            if (modal && modalText && confirmBtn && closeBtn && cancelBtn) {
+                modalText.textContent = `Are you sure you want to delete "${itemTitle}"?`;
+                modal.classList.remove('hidden');
 
-            // Handle confirm button
-            confirmBtn.onclick = function() {
-                deleteForm.submit();
-            };
+                // Handle confirm button
+                confirmBtn.onclick = function() {
+                    deleteForm.submit();
+                };
 
-            // Handle close button
-            closeBtn.onclick = function() {
-                modal.classList.add('hidden');
-            };
+                // Handle close button
+                closeBtn.onclick = function() {
+                    modal.classList.add('hidden');
+                };
 
-            // Handle cancel button
-            cancelBtn.onclick = function() {
-                modal.classList.add('hidden');
-            };
+                // Handle cancel button
+                cancelBtn.onclick = function() {
+                    modal.classList.add('hidden');
+                };
 
-            // Close on clicking overlay
-            modal.querySelector('.modal-overlay').onclick = function() {
-                modal.classList.add('hidden');
-            };
+                // Close on clicking overlay
+                const overlay = modal.querySelector('.modal-overlay');
+                if (overlay) {
+                    overlay.onclick = function() {
+                        modal.classList.add('hidden');
+                    };
+                }
+            }
         }
 
         // Handle move buttons through event delegation
         const moveButton = e.target.closest('button[onclick*="openMoveItemModal"]');
         if (moveButton) {
             e.preventDefault();
-            const itemId = moveButton.getAttribute('data-item-id') || moveButton.getAttribute('onclick').match(/'([^']*)',/)[1];
-            const itemTitle = moveButton.getAttribute('data-item-title') || moveButton.getAttribute('onclick').match(/, *'([^']*)'/)[1];
-            openMoveItemModal(itemId, itemTitle);
+            try {
+                const itemId = moveButton.getAttribute('data-item-id') || 
+                              (moveButton.getAttribute('onclick') && 
+                               moveButton.getAttribute('onclick').match(/'([^']*)',/) && 
+                               moveButton.getAttribute('onclick').match(/'([^']*)',/)[1]);
+                const itemTitle = moveButton.getAttribute('data-item-title') || 
+                                 (moveButton.getAttribute('onclick') && 
+                                  moveButton.getAttribute('onclick').match(/, *'([^']*)'/)) && 
+                                  moveButton.getAttribute('onclick').match(/, *'([^']*)'/)[1];
+                
+                if (itemId && itemTitle) {
+                    openMoveItemModal(itemId, itemTitle);
+                }
+            } catch (e) {
+                console.error("Error extracting item data:", e);
+            }
         }
     });
 }

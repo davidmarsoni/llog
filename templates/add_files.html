@@ -46,15 +46,8 @@
             </div>
             
             <form method="POST" 
-                  action="{{ url_for('file_storage.cache_notion_page') }}" 
-                  id="notion-form"
-                  hx-post="{{ url_for('file_storage.cache_notion_page') }}"
-                  hx-trigger="submit"
-                  hx-target="#processing-status"
-                  hx-swap="outerHTML"
-                  hx-indicator="#loading-indicator"
-                  hx-boost="true"
-                  hx-validate="true">
+                  action="{{ url_for('file_add.cache_notion_page') }}" 
+                  id="notion-form">
                 <!-- Input Mode Selection -->
                 <div class="flex justify-center mb-6">
                     <div class="inline-flex rounded-lg border bg-gray-50 p-1">
@@ -224,17 +217,9 @@
             </div>
             
             <form method="POST" 
-                  action="{{ url_for('file_storage.upload_document') }}" 
+                  action="{{ url_for('file_add.upload_document') }}" 
                   enctype="multipart/form-data" 
-                  id="document-form"
-                  hx-post="{{ url_for('file_storage.upload_document') }}"
-                  hx-encoding="multipart/form-data"
-                  hx-trigger="submit"
-                  hx-target="#upload-status"
-                  hx-swap="outerHTML"
-                  hx-indicator="#loading-indicator"
-                  hx-boost="true"
-                  hx-validate="true">
+                  id="document-form">
                 <div class="space-y-6">
                     <!-- File Upload Section -->
                     <div>
@@ -342,14 +327,17 @@
     <!-- Navigation Buttons -->
     <div class="flex gap-4 mb-6">
         <a href="{{ url_for('file_storage.view_files') }}" 
+           id="view-content-button"
            class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             View Cached Content
         </a>
         <a href="{{ url_for('main.home') }}" 
+           id="home-button"
            class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
             Back to Home
         </a>
         <a href="{{ url_for('chatbot.chatbot_page') }}" 
+           id="chatbot-button"
            class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
             Go to AI Assistant
         </a>
@@ -366,6 +354,41 @@
         const databaseIdInput = document.getElementById('database_id');
         const pageCustomNameInput = document.getElementById('page_custom_name');
         const dbCustomNameInput = document.getElementById('db_custom_name');
+        
+        // Navigation buttons
+        const viewContentButton = document.getElementById('view-content-button');
+        const homeButton = document.getElementById('home-button');
+        const chatbotButton = document.getElementById('chatbot-button');
+        
+        // Add loading indicators to navigation buttons
+        [viewContentButton, homeButton, chatbotButton].forEach(button => {
+            if (button) {
+                button.addEventListener('click', function(event) {
+                    // Save the original text
+                    const originalText = this.innerHTML;
+                    
+                    // Replace with loading spinner and text
+                    this.innerHTML = `
+                        <div class="inline-flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading...
+                        </div>
+                    `;
+                    
+                    // Disable the button to prevent multiple clicks
+                    this.classList.add('pointer-events-none', 'opacity-75');
+                    
+                    // Add a fallback to reset the button if navigation takes too long
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('pointer-events-none', 'opacity-75');
+                    }, 10000); // 10 seconds fallback
+                });
+            }
+        });
         
         // Document upload form elements
         const uploadButton = document.getElementById('upload-button');

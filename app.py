@@ -34,14 +34,9 @@ def create_app(test_config=None):
     def request_timeout(error):
         return jsonify({"error": "Request timeout. Please try again with a smaller file or wait."}), 408
     
-    # Register blueprints
-    from routes.main_routes import main_bp
-    from routes.chatbot_routes import chatbot_bp
-    from routes.file_storage_routes import file_storage_bp
-    
-    app.register_blueprint(main_bp)
-    app.register_blueprint(chatbot_bp)
-    app.register_blueprint(file_storage_bp)
+    # Register all routes using the centralized route registration function
+    from routes import register_routes
+    register_routes(app)
     
     return app
 
