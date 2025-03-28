@@ -169,16 +169,23 @@ gcloud run deploy flask-app `
 
 > don't forget to replace `your-project-id`, `your-bucket-name`, `your-secret-key-value` and `your-service-account-email` with your own values and add the missing environment variables with the `--set-env-vars` flag. (please refer to the [Environment variables](#environment-variables) section for more information)
 
-p.s you can add a new service account  with the admin role to the project by running the following command:
+p.s you can add a new service account with the necessary roles to the project by running the following commands:
 
 ```bash
-gcloud projects add-iam-policy-binding your-project-id `
-  --member="serviceAccount:flask-app-sa@your-project-id.iam.gserviceaccount.com" `
+# Grant Storage Object Admin role (for managing objects in buckets)
+gcloud projects add-iam-policy-binding your-project-id \
+  --member="serviceAccount:flask-app-sa@your-project-id.iam.gserviceaccount.com" \
   --role="roles/storage.objectAdmin"
 
-gcloud iam service-accounts add-iam-policy-binding `
-  flask-app-sa@your-project-id.iam.gserviceaccount.com `
-  --member="user:your-email" `
+# Grant Storage Admin role (for managing buckets)
+gcloud projects add-iam-policy-binding your-project-id \
+  --member="serviceAccount:flask-app-sa@your-project-id.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# Grant service account user role to yourself
+gcloud iam service-accounts add-iam-policy-binding \
+  flask-app-sa@your-project-id.iam.gserviceaccount.com \
+  --member="user:your-email" \
   --role="roles/iam.serviceAccountUser"
 ```
 

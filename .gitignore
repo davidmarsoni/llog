@@ -36,3 +36,4 @@ node_modules/
 #test folder
 test/
 test_*
+services/llm/empty_folders.json
