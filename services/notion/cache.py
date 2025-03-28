@@ -229,8 +229,12 @@ def cache_notion_database(database_id, custom_name=None):
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
         bucket = client.bucket(bucket_name)
         
+        # Generate a single UUID for this database
+        item_id = generate_uuid()
+        
         # Store metadata with database title
         metadata = {
+            'id': item_id,
             'notion_id': database_id,
             'title': database_title,
             'type': 'database',
@@ -239,8 +243,6 @@ def cache_notion_database(database_id, custom_name=None):
             'created_at': time.time(),
             'auto_metadata': auto_metadata
         }
-        
-        item_id = generate_uuid()
         
         # Save metadata to GCS
         current_app.logger.info(f"Saving database metadata to GCS")
@@ -289,6 +291,7 @@ def cache_notion_database(database_id, custom_name=None):
         
         return {
             "success": True,
+            "id": item_id,
             "notion_id": database_id,
             "title": database_title,
             "pages_found": len(page_ids),

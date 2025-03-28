@@ -89,7 +89,7 @@ def process_text_file(file_stream, filename, custom_name=None):
             current_app.logger.info(f"Vector index created successfully")
             
             current_app.logger.info(f"Saving vector index to GCS")
-            vector_index_blob = bucket.blob(f"cache/vector_index_{doc_id}.pkl")
+            vector_index_blob = bucket.blob(f"cache/vector_index_{uuid}.pkl")
             with io.BytesIO() as file_buffer:
                 pickle.dump(index, file_buffer)
                 file_buffer.seek(0)
