@@ -74,32 +74,40 @@ def delete_file_from_storage(file_id):
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
         bucket = client.bucket(bucket_name)
         
-        # Determine the file type by the ID format
         current_app.logger.info(f"Attempting to delete content with ID: {file_id}")
         
-        # Look for all possible file patterns for this ID
+        # Only use standardized ID formats
         patterns = [
-            f"cache/metadata_{file_id}.pkl",
-            f"cache/metadata_db_{file_id}.pkl",
-            f"cache/metadata_doc_{file_id}.pkl",
-            f"cache/notion_data_{file_id}.pkl",
-            f"cache/notion_database_{file_id}.pkl",
-            f"cache/document_data_{file_id}.pkl",
             f"cache/vector_index_{file_id}.pkl",
-            f"cache/vector_database_{file_id}.pkl",
-            f"cache/vector_document_{file_id}.pkl"
+            f"cache/data_{file_id}.pkl",
+            f"cache/metadata_{file_id}.pkl",
+            # Handle potential batch files with the same ID
+            f"cache/data_{file_id}_batch_*.pkl"
         ]
         
         deleted = False
         for pattern in patterns:
-            try:
-                blob = bucket.blob(pattern)
-                if blob.exists():
-                    blob.delete()
-                    current_app.logger.info(f"Deleted file {pattern}")
-                    deleted = True
-            except Exception as e:
-                current_app.logger.warning(f"Could not delete {pattern}: {str(e)}")
+            # Handle wildcard patterns for batch files
+            if "*" in pattern:
+                prefix = pattern.split("*")[0]
+                # List all blobs with the prefix
+                blobs = list(bucket.list_blobs(prefix=prefix))
+                for blob in blobs:
+                    try:
+                        blob.delete()
+                        current_app.logger.info(f"Deleted batch file {blob.name}")
+                        deleted = True
+                    except Exception as e:
+                        current_app.logger.warning(f"Could not delete batch file {blob.name}: {str(e)}")
+            else:
+                try:
+                    blob = bucket.blob(pattern)
+                    if blob.exists():
+                        blob.delete()
+                        current_app.logger.info(f"Deleted file {pattern}")
+                        deleted = True
+                except Exception as e:
+                    current_app.logger.warning(f"Could not delete {pattern}: {str(e)}")
         
         if not deleted:
             # If no files matched our patterns, try direct path deletion as fallback

@@ -141,28 +141,19 @@ def _async_reload_cache():
             bucket_name = os.getenv("GCS_BUCKET_NAME") or _app_ref.config.get('GCS_BUCKET_NAME')
             bucket = client.bucket(bucket_name)
             
-            # List blobs with cache/ prefix
-            vector_blobs = list(bucket.list_blobs(prefix="cache/vector_"))
+            # List blobs with cache/ prefix - only using standardized formats
+            vector_blobs = list(bucket.list_blobs(prefix="cache/vector_index_"))
             metadata_blobs = list(bucket.list_blobs(prefix="cache/metadata_"))
             
             # Create a dictionary of metadata by ID
             metadata_dict = {}
             for blob in metadata_blobs:
                 try:
-                    # Extract ID from the blob name
+                    # Extract ID from the blob name using only standardized format
                     blob_name = blob.name
-                    if "metadata_db_" in blob_name:
-                        item_id = blob_name.split("metadata_db_")[1].replace('.pkl', '')
-                        metadata = download_blob_to_memory(blob_name)
-                        metadata_dict[item_id] = metadata
-                    elif "metadata_doc_" in blob_name:
-                        item_id = blob_name.split("metadata_doc_")[1].replace('.pkl', '')
-                        metadata = download_blob_to_memory(blob_name)
-                        metadata_dict[item_id] = metadata
-                    elif "metadata_" in blob_name:
-                        item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
-                        metadata = download_blob_to_memory(blob_name)
-                        metadata_dict[item_id] = metadata
+                    item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
+                    metadata = download_blob_to_memory(blob_name)
+                    metadata_dict[item_id] = metadata
                 except Exception as e:
                     current_app.logger.error(f"Error processing metadata blob {blob_name}: {str(e)}")
                     continue
@@ -202,28 +193,19 @@ def _sync_reload_cache():
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
         bucket = client.bucket(bucket_name)
         
-        # List blobs with cache/ prefix
-        vector_blobs = list(bucket.list_blobs(prefix="cache/vector_"))
+        # List blobs with cache/ prefix - only using standardized formats
+        vector_blobs = list(bucket.list_blobs(prefix="cache/vector_index_"))
         metadata_blobs = list(bucket.list_blobs(prefix="cache/metadata_"))
         
         # Create a dictionary of metadata by ID
         metadata_dict = {}
         for blob in metadata_blobs:
             try:
-                # Extract ID from the blob name
+                # Extract ID from the blob name using only standardized format
                 blob_name = blob.name
-                if "metadata_db_" in blob_name:
-                    item_id = blob_name.split("metadata_db_")[1].replace('.pkl', '')
-                    metadata = download_blob_to_memory(blob_name)
-                    metadata_dict[item_id] = metadata
-                elif "metadata_doc_" in blob_name:
-                    item_id = blob_name.split("metadata_doc_")[1].replace('.pkl', '')
-                    metadata = download_blob_to_memory(blob_name)
-                    metadata_dict[item_id] = metadata
-                elif "metadata_" in blob_name:
-                    item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
-                    metadata = download_blob_to_memory(blob_name)
-                    metadata_dict[item_id] = metadata
+                item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
+                metadata = download_blob_to_memory(blob_name)
+                metadata_dict[item_id] = metadata
             except Exception as e:
                 current_app.logger.error(f"Error processing metadata blob {blob_name}: {str(e)}")
                 continue
@@ -349,13 +331,8 @@ def _update_item_metadata(item_id: str, metadata_update: Dict):
         bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
         bucket = client.bucket(bucket_name)
         
-        # Determine metadata blob name based on item type
-        if bucket.blob(f"cache/metadata_db_{item_id}.pkl").exists():
-            metadata_blob_name = f"cache/metadata_db_{item_id}.pkl"
-        elif bucket.blob(f"cache/metadata_doc_{item_id}.pkl").exists():
-            metadata_blob_name = f"cache/metadata_doc_{item_id}.pkl" 
-        else:
-            metadata_blob_name = f"cache/metadata_{item_id}.pkl"
+        # Only use standardized metadata blob format
+        metadata_blob_name = f"cache/metadata_{item_id}.pkl"
         
         # Get current metadata
         metadata_blob = bucket.blob(metadata_blob_name)
@@ -718,20 +695,10 @@ def _process_vector_blob(blob_name: str, metadata_dict: Dict[str, Any]) -> Dict[
     if not blob_name.endswith('.pkl'):
         return None
     
-    # Clean up the blob name to get the ID
-    clean_id = None
-    item_type = None
-    
-    # Extract ID and type based on file pattern
+    # Only support standardized ID format
     if "vector_index_" in blob_name:
         clean_id = blob_name.split("vector_index_")[1].replace('.pkl', '')
         item_type = 'page'
-    elif "vector_database_" in blob_name:
-        clean_id = blob_name.split("vector_database_")[1].replace('.pkl', '')
-        item_type = 'database'
-    elif "vector_document_" in blob_name:
-        clean_id = blob_name.split("vector_document_")[1].replace('.pkl', '')
-        item_type = 'document'
     else:
         return None
         

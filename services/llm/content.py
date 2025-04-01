@@ -88,8 +88,6 @@ def query_content(query: str, index_ids: List[str] = None, use_metadata_filterin
                 vector_paths = []
                 possible_paths = [
                     f"cache/vector_index_{clean_id}.pkl",
-                    f"cache/vector_database_{clean_id}.pkl",
-                    f"cache/vector_document_{clean_id}.pkl"
                 ]
                 
                 for path in possible_paths:

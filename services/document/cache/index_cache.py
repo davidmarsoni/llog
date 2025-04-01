@@ -24,12 +24,8 @@ def _is_cache_valid():
 
 def _process_metadata_blob(blob_name: str) -> tuple[str, Dict[str, Any]]:
     """Process a metadata blob and return its ID and content"""
-    if "metadata_db_" in blob_name:
-        item_id = blob_name.split("metadata_db_")[1].replace('.pkl', '')
-    elif "metadata_doc_" in blob_name:
-        item_id = blob_name.split("metadata_doc_")[1].replace('.pkl', '')
-    else:
-        item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
+    # Only support standardized ID format
+    item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
     
     metadata = download_blob_to_memory(blob_name)
     return item_id, metadata
@@ -39,15 +35,10 @@ def _process_vector_blob(blob_name: str, metadata_dict: Dict[str, Any]) -> Dict[
     if not blob_name.endswith('.pkl'):
         return None
         
+    # Only support standardized ID format
     if "vector_index_" in blob_name:
         item_id = blob_name.split("vector_index_")[1].replace('.pkl', '')
         item_type = 'page'
-    elif "vector_database_" in blob_name:
-        item_id = blob_name.split("vector_database_")[1].replace('.pkl', '')
-        item_type = 'database'
-    elif "vector_document_" in blob_name:
-        item_id = blob_name.split("vector_document_")[1].replace('.pkl', '')
-        item_type = 'document'
     else:
         return None
         
@@ -59,7 +50,7 @@ def _process_vector_blob(blob_name: str, metadata_dict: Dict[str, Any]) -> Dict[
         metadata = metadata_dict[item_id]
         if 'title' in metadata:
             title = metadata['title']
-        if item_type == 'document' and 'format' in metadata:
+        if 'format' in metadata:
             item_type = metadata['format']
         if 'auto_metadata' in metadata:
             auto_metadata = metadata['auto_metadata']
@@ -81,8 +72,8 @@ def _load_indexes() -> List[Dict[str, Any]]:
     bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
     bucket = client.bucket(bucket_name)
     
-    # List blobs with cache/ prefix
-    vector_blobs = list(bucket.list_blobs(prefix="cache/vector_"))
+    # List blobs with cache/ prefix - only using standardized formats
+    vector_blobs = list(bucket.list_blobs(prefix="cache/vector_index_"))
     metadata_blobs = list(bucket.list_blobs(prefix="cache/metadata_"))
     
     # Process metadata blobs
