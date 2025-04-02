@@ -4,9 +4,14 @@ Chatbot routes for the application
 from flask import Blueprint, render_template, request, jsonify, current_app, make_response
 from services.llm_service import get_llm_response, get_available_indexes
 import httpx
+from services.llm.agent.QueryResearch import QueryResearch
+from services.llm.agent.WriteAgent import WriteAgent
+from services.llm.agent.ReviewAgent import ReviewAgent
 
 # Create a Blueprint for chatbot routes
 chatbot_bp = Blueprint('chatbot', __name__, url_prefix='/chatbot')
+
+USE_AGENTS = True
 
 def add_cache_headers(response):
     """Add cache control headers to response"""
@@ -49,44 +54,63 @@ def chatbot_query():
         if use_content:
             current_app.logger.info(f"Using indexed content: {content_ids if content_ids else 'all available'}")
         
+
+        if USE_AGENTS:
+            research = QueryResearch().run(query, use_content=use_content, content_ids=content_ids)
+            content = WriteAgent().run(research)
+            final_output = ReviewAgent().run(content)
+
+            json_response = make_response(jsonify({
+                'answer': final_output,
+                'used_content': use_content,  # Changed to reflect actual use of content
+                'content_ids_used': content_ids if use_content else []
+            }))
+            return add_cache_headers(json_response)
+        else:
         # Use the LLM service to get a response with appropriate context
-        try:
-            # Call the get_llm_response function with proper parameters
-            llm_response = get_llm_response(
-                query=query,
-                chat_history=chat_history,
-                index_ids=content_ids if content_ids else None,
-                use_context=use_content
-            )
+            try:
+                # Call the get_llm_response function with proper parameters
+                llm_response = get_llm_response(
+                    query=query,
+                    chat_history=chat_history,
+                    index_ids=content_ids if content_ids else None,
+                    use_context=use_content
+                )
+                
+                # Handle different response formats
+                if "error" in llm_response:
+                    return add_cache_headers(make_response(jsonify({
+                        'error': llm_response["error"]
+                    }), 500))
             
-            # Handle different response formats
-            if "error" in llm_response:
+                # Extract the answer from the response
+                answer = llm_response.get("answer", "Sorry, no response was generated.")
+                used_context = llm_response.get("used_context", False)
+            except httpx.TimeoutException:
+                current_app.logger.error("Request to LLM service timed out")
                 return add_cache_headers(make_response(jsonify({
-                    'error': llm_response["error"]
-                }), 500))
-            
-            # Extract the answer from the response
-            answer = llm_response.get("answer", "Sorry, no response was generated.")
-            used_context = llm_response.get("used_context", False)
-            
+                    'error': "I'm sorry, but the request timed out. Please try again with a shorter query or less context."
+                }), 408))
+                
             json_response = make_response(jsonify({
                 'answer': answer,
                 'used_content': used_context,
                 'content_ids_used': content_ids if use_content else []
             }))
             return add_cache_headers(json_response)
-            
-        except httpx.TimeoutException:
-            current_app.logger.error("Request to LLM service timed out")
-            return add_cache_headers(make_response(jsonify({
-                'error': "I'm sorry, but the request timed out. Please try again with a shorter query or less context."
-            }), 408))
     
     except Exception as e:
         current_app.logger.error(f"Error in chatbot query: {str(e)}")
         return add_cache_headers(make_response(jsonify({
             'error': f"Sorry, there was an error processing your request: {str(e)}"
         }), 500))
+
+@chatbot_bp.route('/toggle-mode', methods=['POST'])
+def toggle_mode():
+    global USE_AGENTS
+    USE_AGENTS = not USE_AGENTS
+    mode = "Agents" if USE_AGENTS else "LLM Direct"
+    return jsonify({"mode": mode})
 
 @chatbot_bp.after_request
 def after_request(response):

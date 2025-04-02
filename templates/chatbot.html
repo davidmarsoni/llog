@@ -3,6 +3,13 @@
 {% block content %}
     <h1 class="text-3xl font-bold mb-4">{% block title %}AI Assistant{% endblock %}</h1>
     
+    <div class="flex items-center">
+        <span class="mr-2 text-sm">LLM</span>
+        <label class="relative inline-block w-12 h-6">
+            <input id="mode-toggle" type="checkbox" class="opacity-0 w-0 h-0">
+        </label>
+    </div>
+
     <div class="bg-white p-4 rounded border mb-6">
         <!-- Content Selection -->
         <div class="mb-4 p-4 border rounded bg-gray-50">
@@ -81,7 +88,8 @@
             const useContent = document.getElementById('use-content');
             const contentOptions = document.getElementById('content-options');
             const refreshIndexesBtn = document.getElementById('refresh-indexes');
-            
+            const modeToggle = document.getElementById('mode-toggle');
+
             // Chat history for context
             let chatHistory = [];
             
@@ -90,6 +98,23 @@
                 contentOptions.classList.toggle('hidden', !this.checked);
             });
             
+            // Toggle LLM/Agent mode
+            modeToggle.addEventListener('change', function() {
+                fetch('/chatbot/toggle-mode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Mode changed to:', data.mode);
+                })
+                .catch(error => {
+                    console.error('Error toggling mode:', error);
+                });
+            });
+
             // Refresh available indexes
             refreshIndexesBtn.addEventListener('click', async function() {
                 try {
