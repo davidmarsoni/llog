@@ -1,11 +1,17 @@
+{% if not ai_only|default(false) %}
 <!-- User Message -->
-<div class="mb-4">
-    <div class="font-bold text-green-600">You</div>
-    <div class="bg-green-100 rounded-lg p-3 text-gray-800">{{ user_message }}</div>
+<div class="mb-4 flex justify-end">
+    <div class="max-w-[80%] order-1 w-auto">
+        <div class="font-bold text-green-600 text-right mb-1">You</div>
+        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800">{{ user_message }}</div>
+    </div>
 </div>
+{% endif %}
 
 <!-- AI Response -->
-<div class="mb-4">
-    <div class="font-bold text-blue-600">AI Assistant</div>
-    <div class="bg-blue-100 rounded-lg p-3 text-gray-800">{{ ai_response }}</div>
+<div class="mb-4" id="{{ response_element_id|default('ai-response-placeholder') }}">
+    <div class="max-w-[80%] w-fit">
+        <div class="font-bold text-blue-600 mb-1">AI Assistant</div>
+        <div class="bg-blue-100 rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 markdown-content">{{ ai_response }}</div>
+    </div>
 </div>

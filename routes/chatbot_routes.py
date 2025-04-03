@@ -48,6 +48,15 @@ def send_message():
         use_content = request.form.get('use_content', 'false').lower() == 'true'
         content_ids = request.form.getlist('content_ids[]')
         
+        # Get the response element ID from the form data
+        response_element_id = request.form.get('response_element_id', 'ai-response-placeholder')
+        
+        # Get advanced parameters
+        creativity = request.form.get('creativity', '50')
+        max_tokens = request.form.get('maxToken', '1000')
+        modules = request.form.get('modules', 'default')
+        use_rag = request.form.get('useRag', 'false').lower() == 'true'
+        
         if not message:
             return "Please enter a message."
             
@@ -55,13 +64,21 @@ def send_message():
         response = get_llm_response(
             query=message,
             use_context=use_content,
-            index_ids=content_ids if content_ids else None
+            index_ids=content_ids if content_ids else None#,
+            # Pass advanced parameters
+            #creativity=int(creativity),
+            #max_tokens=int(max_tokens),
+            #modules=modules,
+            #use_rag=use_rag
         )
         
-        # Render the message pair template
+        # Render the message with a flag to only include AI response
+        # This flag will be used in the template to conditionally render parts
         return render_template('components/chat_messages.html',
                              user_message=message,
-                             ai_response=response.get('answer', 'Sorry, no response was generated.'))
+                             ai_response=response.get('answer', 'Sorry, no response was generated.'),
+                             ai_only=True,
+                             response_element_id=response_element_id)  # Pass the response element ID to the template
                              
     except Exception as e:
         current_app.logger.error(f"Error processing message: {str(e)}")
