@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1 class="text-3xl font-bold mb-4">{% block title %}AI Assistant{% endblock %}</h1>
+    <h1 class="text-3xl font-bold mb-4 mt-6">{% block title %}AI Assistant{% endblock %}</h1>
     
-    <div class="bg-white p-4 rounded border mb-6">
+    <div class="bg-white p-4 rounded border">
         <!-- Content Selection -->
         <div class="mb-4 p-4 border rounded bg-gray-50">
             <h3 class="text-lg font-semibold mb-2">Knowledge Base</h3>
@@ -42,58 +42,74 @@
         </div>
 
         <!-- Chat Container -->
-        <div id="chat-container" class="border rounded p-4 mb-4 h-80 overflow-y-auto">
+        <div id="chat-container" class="border rounded p-4 mb-4 h-60 overflow-y-auto">
             <!-- Initial messages if any -->
             {% for message in messages %}
                 <div class="mb-4">
                     <div class="font-bold {% if message.role == 'user' %}text-green-600{% else %}text-blue-600{% endif %}">
                         {{ 'You' if message.role == 'user' else 'AI Assistant' }}
                     </div>
-                    <div class="{% if message.role == 'user' %}bg-green-100{% else %}bg-blue-100{% endif %} rounded-lg p-3 text-gray-800">
-                        {{ message.content }}
+                    <div class="{% if message.role == 'user' %}bg-green-100{% else %}bg-blue-100 markdown-content{% endif %} rounded-lg p-3 text-gray-800">
+                        {% if message.role == 'user' %}
+                            {{ message.content }}
+                        {% else %}
+                            <div id="md-content-{{ loop.index }}">{{ message.content }}</div>
+                            <script>
+                                document.getElementById('md-content-{{ loop.index }}').innerHTML = marked.parse('{{ message.content|replace("'", "\\'") }}');
+                            </script>
+                        {% endif %}
                     </div>
                 </div>
             {% endfor %}
         </div>
 
-        <form id="chat-form" class="space-y-4"
+        <form id="chat-form"
               hx-post="{{ url_for('chatbot.send_message') }}"
               hx-target="#chat-container"
               hx-swap="beforeend scroll:bottom"
               hx-indicator="#send-loading"
               hx-disabled-elt="#send-button">
             
-            <!-- Message input with real-time character count -->
-            <div class="relative">
-                <textarea name="message" 
-                          id="message-input"
-                          class="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
-                          rows="3" 
-                          placeholder="Type your message here..."
-                          required
-                          hx-trigger="keyup changed delay:100ms"
-                          hx-get="{{ url_for('chatbot.check_message_length') }}"
-                          hx-target="#char-count"
-                          hx-swap="innerHTML"></textarea>
-                <div id="char-count" class="absolute bottom-2 right-2 text-sm text-gray-500">0/2000</div>
+            <!-- Message input with send button underneath -->
+            <div class="border rounded-lg overflow-hidden">
+                <!-- Text area -->
+                <div class="relative w-full">
+                    <textarea name="message" 
+                              id="message-input"
+                              class="w-full p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-b"
+                              rows="3" 
+                              placeholder="Type your message here..."
+                              required
+                              hx-trigger="keyup changed delay:100ms"
+                              hx-get="{{ url_for('chatbot.check_message_length') }}"
+                              hx-target="#char-count"
+                              hx-swap="innerHTML"></textarea>
+                    <div id="char-count" class="absolute bottom-2 right-2 text-sm text-gray-500">0/2000</div>
+                </div>
+                
+                <!-- Button bar -->
+                <div class="flex justify-end items-center px-2 py-2 bg-gray-50">
+                    <!-- Chatbot Mode Selector -->
+                    <div class="justify-end">
+                        <select id="chatbot-mode" name="chatbot_mode" class="text-sm text-gray-700 border border-gray-300 bg-white rounded-md py-1.5 pl-3 pr-7 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                            <option value="standard">Standard Chat</option>
+                        </select>
+                    </div>
+                    
+                    <div id="send-loading" class="loading-indicator mr-2">
+                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    </div>
+                    <button id="send-button" 
+                            type="submit" 
+                            class="px-4 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Send
+                    </button>
+                </div>
             </div>
 
             <!-- Hidden inputs for content selection -->
             <input type="hidden" name="use_content" id="use-content-input" value="false">
             <div id="content-ids-container"></div>
-
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <div id="send-loading" class="loading-indicator">
-                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    </div>
-                    <button id="send-button" 
-                            type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Send Message
-                    </button>
-                </div>
-            </div>
         </form>
 
         <!-- Error toast -->
@@ -102,7 +118,7 @@
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 101.414 1.414L10 11.414l1.293 1.293a1 1 001.414-1.414L11.414 10l1.293-1.293a1 1 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                     </svg>
                 </div>
                 <div class="ml-3">
@@ -120,6 +136,9 @@
         </a>
     </div>
 
+    <!-- Add marked.js for markdown support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const useContent = document.getElementById('use-content');
@@ -129,6 +148,34 @@
             const chatContainer = document.getElementById('chat-container');
             const messageInput = document.getElementById('message-input');
             const contentIdsContainer = document.getElementById('content-ids-container');
+            const chatbotModeSelect = document.getElementById('chatbot-mode');
+            const chatForm = document.getElementById('chat-form');
+            
+            // Configure marked for rendering
+            marked.setOptions({
+                "breaks": false,
+                "gfm": true,
+                "pedantic": false,
+                "silent": false
+            });
+            
+            // Update form target when chatbot mode changes
+            chatbotModeSelect.addEventListener('change', function() {
+                const mode = this.value;
+                let targetUrl = '';
+
+                console.log('Selected mode:', mode);
+                
+                switch(mode) {
+                    case 'standard':
+                        targetUrl = '{{ url_for("chatbot.send_message") }}';
+                        break;
+                    default:
+                        targetUrl = '{{ url_for("chatbot.send_message") }}';
+                }
+                
+                chatForm.setAttribute('hx-post', targetUrl);
+            });
             
             // Toggle content options visibility
             useContent.addEventListener('change', function() {
@@ -193,6 +240,21 @@
                 }
             });
             
+            // Process markdown in new AI responses (for HTMX responses)
+            document.body.addEventListener('htmx:afterSwap', function(event) {
+                if (event.detail.target.id === 'chat-container') {
+                    const lastMessage = event.detail.target.lastElementChild;
+                    if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
+                        const messageContent = lastMessage.querySelector('.bg-blue-100');
+                        if (messageContent) {
+                            const text = messageContent.textContent;
+                            messageContent.innerHTML = marked.parse(text);
+                            messageContent.classList.add('markdown-content');
+                        }
+                    }
+                }
+            });
+            
             // Update hidden inputs for selected content IDs
             function updateContentIds() {
                 contentIdsContainer.innerHTML = '';
@@ -228,4 +290,119 @@
             messageInput.focus();
         });
     </script>
+    
+    <style>
+        /* Style for the markdown wrapper */
+        .markdown-wrapper {
+            background-color: rgba(225, 234, 243, 0.9);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: -0.25rem;
+        }
+
+        /* Enhanced styles for markdown content */
+        .markdown-content h1, 
+        .markdown-content h2, 
+        .markdown-content h3, 
+        .markdown-content h4, 
+        .markdown-content h5, 
+        .markdown-content h6 {
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        .markdown-content h1 { font-size: 1.5rem; }
+        .markdown-content h2 { font-size: 1.3rem; }
+        .markdown-content h3 { font-size: 1.1rem; }
+        
+        .markdown-content p {
+            margin-bottom: 0.75rem;
+        }
+        
+        .markdown-content code {
+            background-color: rgba(237, 242, 247, 0.8);
+            padding: 0.15rem 0.3rem;
+            border-radius: 0.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+            color: #3182ce;
+            border: 1px solid rgba(203, 213, 224, 0.5);
+        }
+        
+        .markdown-content pre {
+            background-color: rgba(237, 242, 247, 0.8);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            border: 1px solid rgba(203, 213, 224, 0.5);
+        }
+        
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            border: none;
+            font-size: 0.9em;
+        }
+        
+        .markdown-content blockquote {
+            border-left: 4px solid #3182ce;
+            padding: 0.5rem 0 0.5rem 1rem;
+            margin: 0.75rem 0;
+            background-color: rgba(237, 242, 247, 0.5);
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin: 0.75rem 0 0.75rem 1.5rem;
+        }
+        
+        .markdown-content ul li, .markdown-content ol li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .markdown-content a {
+            color: #3182ce;
+            text-decoration: none;
+            border-bottom: 1px solid #3182ce;
+            transition: all 0.2s;
+        }
+        
+        .markdown-content a:hover {
+            opacity: 0.8;
+        }
+        
+        .markdown-content hr {
+            margin: 1rem 0;
+            border: 0;
+            height: 1px;
+            background-color: rgba(203, 213, 224, 0.8);
+        }
+        
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.75rem 0;
+            font-size: 0.9em;
+        }
+        
+        .markdown-content table th,
+        .markdown-content table td {
+            padding: 0.5rem;
+            border: 1px solid rgba(203, 213, 224, 0.8);
+        }
+        
+        .markdown-content table th {
+            background-color: rgba(237, 242, 247, 0.8);
+            font-weight: 600;
+        }
+        
+        .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+        }
+    </style>
 {% endblock %}
