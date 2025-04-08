@@ -3,7 +3,7 @@
 {% block content %}
 <!--<h1 class="text-3xl font-bold mb-4 mt-6">{% block title %}AI Assistant{% endblock %}</h1>-->
     
-    <div class="bg-white shadow rounded-lg p-6 mb-6">
+    <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
         <!-- Outer container with flex layout to accommodate content panel -->
         <div class="flex w-full gap-4">
             <!-- Content panel (hidden by default, will slide in when toggled) -->
@@ -18,24 +18,24 @@
                             <label for="creativity" class="block text-sm font-medium text-gray-700 mb-1">Creativity</label>
                             <div class="flex items-center">
                                 <span class="text-xs text-gray-500 mr-2">Low</span>
-                                <input type="range" id="creativity" name="creativity" min="0" max="100" value="50" 
+                                <input type="range" id="creativity" name="creativity" min="0" max="2" value="1"  step="0.1"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <span class="text-xs text-gray-500 ml-2">High</span>
                             </div>
-                            <input type="hidden" name="creativity_value" id="creativity-value" value="50">
+                            <input type="hidden" name="creativity_value" id="creativity-value" value="2">
                         </div>
                         
                         <!-- Max Tokens -->
                         <div class="mb-4">
                             <label for="maxToken" class="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
                             <input type="number" id="maxToken" name="maxToken" value="1000" min="100" max="4000" 
-                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
+                                   class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
                         </div>
                         
                         <!-- Modules -->
                         <div class="mb-4">
                             <label for="modules" class="block text-sm font-medium text-gray-700 mb-1">Modules</label>
-                            <select id="modules" name="modules" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
+                            <select id="modules" name="modules" class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
                                 <option value="default">Default</option>
                                 <option value="summarization">Summarization</option>
                                 <option value="code">Code</option>
@@ -85,9 +85,9 @@
             </div>
         
             <!-- Main chat container (will resize when content panel opens) -->
-            <div class="flex-grow transition-all duration-300">
+            <div class="grow transition-all duration-300">
                 <!-- Chat Container -->
-                <div id="chat-container" class="border rounded-lg p-4 mb-4 h-60 overflow-y-auto bg-gray-50">
+                <div id="chat-container" class="border rounded-lg p-4 mb-4 h-9/10 overflow-y-auto bg-gray-50">
                     <!-- Initial messages if any -->
                     {% for message in messages %}
                         <div class="mb-4 {% if message.role == 'user' %}flex justify-end{% endif %}">
@@ -95,7 +95,7 @@
                                 <div class="font-bold {% if message.role == 'user' %}text-green-600 text-right{% else %}text-blue-600{% endif %} mb-1">
                                     {{ 'You' if message.role == 'user' else 'AI Assistant' }}
                                 </div>
-                                <div class="{% if message.role == 'user' %}bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg{% else %}bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg{% endif %} p-3 text-gray-800 shadow-sm">
+                                <div class="{% if message.role == 'user' %}bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg{% else %}bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg{% endif %} p-3 text-gray-800 shadow-xs">
                                     {% if message.role == 'user' %}
                                         {{ message.content }}
                                     {% else %}
@@ -117,12 +117,12 @@
                       hx-indicator="#send-loading"
                       hx-disabled-elt="#send-button">
                     <!-- Message input with send button underneath -->
-                    <div class="border rounded-lg overflow-hidden shadow-sm">
+                    <div class="border rounded-lg overflow-hidden shadow-xs">
                         <!-- Text area -->
                         <div class="relative w-full">
                             <textarea name="message" 
                                       id="message-input"
-                                      class="w-full p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-b"
+                                      class="w-full p-3 resize-none focus:outline-hidden focus:ring-2 focus:ring-blue-500 border-b"
                                       rows="3" 
                                       placeholder="Type your message here..."
                                       required
@@ -137,7 +137,7 @@
                         <div class="flex justify-between items-center px-3 py-2 bg-gray-50">
                             <!-- Chatbot Mode Selector -->
                             <div class="justify-start mr-2">
-                                <select id="chatbot-mode" name="chatbot_mode" class="text-sm text-gray-700 border border-gray-300 bg-white rounded-md py-1.5 pl-3 pr-7 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                <select id="chatbot-mode" name="chatbot_mode" class="text-sm text-gray-700 border border-gray-300 bg-white rounded-md py-1.5 pl-3 pr-7 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs">
                                     <option value="standard">Standard Chat</option>
                                     <option value="agents">All Agents</option>
                                 </select>
@@ -157,7 +157,7 @@
                                 </div>
                                 <button id="send-button" 
                                         type="submit" 
-                                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
                                     Send
                                 </button>
                             </div>
@@ -175,7 +175,7 @@
         <div id="error-toast" 
              class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
             <div class="flex items-center">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 101.414 1.414L10 11.414l1.293 1.293a1 1 001.414-1.414L11.414 10l1.293-1.293a1 1 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                     </svg>
@@ -236,6 +236,8 @@
             creativitySlider.addEventListener('input', function() {
                 creativityValueInput.value = this.value;
             });
+              // Initialize message history tracker
+            let messageHistory = [];
             
             // Add a manual form submission handler to clear the textarea and include advanced params
             chatForm.addEventListener('submit', function(event) {
@@ -253,6 +255,15 @@
                 // Show the loading indicator immediately
                 sendLoading.style.display = 'block';
                 
+                // Create message object and add to history
+                const userMessage = {
+                    role: 'user',
+                    content: messageValue
+                };
+                
+                // Add to message history tracker
+                messageHistory.push(userMessage);
+                
                 // Add the user message to chat immediately
                 const userMessageDiv = document.createElement('div');
                 userMessageDiv.className = 'mb-4 flex justify-end';
@@ -261,7 +272,7 @@
                         <div class="font-bold text-green-600 text-right mb-1">
                             You
                         </div>
-                        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-sm">
+                        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-xs">
                             ${escapeHtml(messageValue)}
                         </div>
                     </div>
@@ -278,7 +289,7 @@
                         <div class="font-bold text-blue-600 mb-1">
                             AI Assistant
                         </div>
-                        <div class="bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-sm">
+                        <div class="bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-xs">
                             <div class="flex items-center space-x-2">
                                 <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600"></div>
                                 <span>Thinking...</span>
@@ -290,10 +301,14 @@
                 
                 // Scroll to the bottom of the chat container
                 chatContainer.scrollTop = chatContainer.scrollHeight;
-                
                 // Add advanced settings parameters to form data if advanced mode is on
                 const formData = new FormData(chatForm);
                 formData.append('response_element_id', aiResponseId); // Add the unique ID to the form data
+                
+                // Add message history to form data
+                messageHistory.forEach((msg, index) => {
+                    formData.append('lstMessagesHistory[]', JSON.stringify(msg));
+                });
                 
                 if (useContent.checked) {
                     // Add advanced settings to form data
@@ -301,10 +316,6 @@
                     formData.set('maxToken', document.getElementById('maxToken').value);
                     formData.set('modules', document.getElementById('modules').value);
                     formData.set('useRag', document.getElementById('useRag').checked);
-                      // Add selected content IDs as listOfIndexes
-                    document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
-                        formData.append('listOfIndexes[]', checkbox.value);
-                    });
                 }
                 
                 // Send the message via fetch API
@@ -436,12 +447,12 @@
                     // Show the advanced settings panel
                     contentOptions.style.width = '300px';
                     contentOptions.style.height = 'auto';
-                    document.querySelector('.flex-grow').style.maxWidth = 'calc(100% - 320px)';
+                    document.querySelector('.grow').style.maxWidth = 'calc(100% - 320px)';
                 } else {
                     // Hide the advanced settings panel
                     contentOptions.style.width = '0';
                     contentOptions.style.height = '0';
-                    document.querySelector('.flex-grow').style.maxWidth = '100%';
+                    document.querySelector('.grow').style.maxWidth = '100%';
                 }
                 useContentInput.value = this.checked;
             });
@@ -576,119 +587,89 @@
             messageInput.focus();
         });
     </script>
-    
-    <style>
-        /* Style for the markdown wrapper */
-        .markdown-wrapper {
-            background-color: rgba(225, 234, 243, 0.9);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            margin: -0.25rem;
-        }
-
-        /* Enhanced styles for markdown content */
-        .markdown-content h1, 
-        .markdown-content h2, 
-        .markdown-content h3, 
-        .markdown-content h4, 
-        .markdown-content h5, 
-        .markdown-content h6 {
-            font-weight: 600;
-            margin-top: 1rem;
-            margin-bottom: 0.5rem;
-            color: #2c3e50;
-        }
-        
-        .markdown-content h1 { font-size: 1.5rem; }
-        .markdown-content h2 { font-size: 1.3rem; }
-        .markdown-content h3 { font-size: 1.1rem; }
-        
-        .markdown-content p {
-            margin-bottom: 0.75rem;
-        }
-        
-        .markdown-content code {
-            background-color: rgba(237, 242, 247, 0.8);
-            padding: 0.15rem 0.3rem;
-            border-radius: 0.25rem;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.9em;
-            color: #3182ce;
-            border: 1px solid rgba(203, 213, 224, 0.5);
-        }
-        
-        .markdown-content pre {
-            background-color: rgba(237, 242, 247, 0.8);
-            padding: 0.75rem;
-            border-radius: 0.375rem;
-            overflow-x: auto;
-            margin: 0.75rem 0;
-            border: 1px solid rgba(203, 213, 224, 0.5);
-        }
-        
-        .markdown-content pre code {
-            background-color: transparent;
-            padding: 0;
-            border: none;
-            font-size: 0.9em;
-        }
-        
-        .markdown-content blockquote {
-            border-left: 4px solid #3182ce;
-            padding: 0.5rem 0 0.5rem 1rem;
-            margin: 0.75rem 0;
-            background-color: rgba(237, 242, 247, 0.5);
-            border-radius: 0 0.25rem 0.25rem 0;
-        }
-        
-        .markdown-content ul, .markdown-content ol {
-            margin: 0.75rem 0 0.75rem 1.5rem;
-        }
-        
-        .markdown-content ul li, .markdown-content ol li {
-            margin-bottom: 0.25rem;
-        }
-        
-        .markdown-content a {
-            color: #3182ce;
-            text-decoration: none;
-            border-bottom: 1px solid #3182ce;
-            transition: all 0.2s;
-        }
-        
-        .markdown-content a:hover {
-            opacity: 0.8;
-        }
-        
-        .markdown-content hr {
-            margin: 1rem 0;
-            border: 0;
-            height: 1px;
-            background-color: rgba(203, 213, 224, 0.8);
-        }
-        
-        .markdown-content table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 0.75rem 0;
-            font-size: 0.9em;
-        }
-        
-        .markdown-content table th,
-        .markdown-content table td {
-            padding: 0.5rem;
-            border: 1px solid rgba(203, 213, 224, 0.8);
-        }
-        
-        .markdown-content table th {
-            background-color: rgba(237, 242, 247, 0.8);
-            font-weight: 600;
-        }
-        
-        .markdown-content img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 0.25rem;
-        }
-    </style>
+      <!-- Tailwind classes replace custom CSS -->
+    <script>
+        // Add Tailwind classes to rendered markdown content
+        document.addEventListener('DOMContentLoaded', function() {
+            function styleMarkdownElements() {
+                // Select all markdown content containers
+                document.querySelectorAll('.markdown-content').forEach(container => {
+                    // Style headings
+                    container.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(heading => {
+                        heading.classList.add('font-semibold', 'mt-4', 'mb-2', 'text-slate-800');
+                    });
+                    container.querySelectorAll('h1').forEach(h => h.classList.add('text-2xl'));
+                    container.querySelectorAll('h2').forEach(h => h.classList.add('text-xl'));
+                    container.querySelectorAll('h3').forEach(h => h.classList.add('text-lg'));
+                    
+                    // Style paragraphs
+                    container.querySelectorAll('p').forEach(p => p.classList.add('mb-3'));
+                    
+                    // Style code blocks
+                    container.querySelectorAll('code:not(pre code)').forEach(code => {
+                        code.classList.add('bg-blue-50', 'px-1.5', 'py-0.5', 'rounded', 'text-sm', 'font-mono', 'text-blue-600', 'border', 'border-blue-100');
+                    });
+                    
+                    // Style pre blocks (code blocks)
+                    container.querySelectorAll('pre').forEach(pre => {
+                        pre.classList.add('bg-gray-50', 'p-3', 'rounded-md', 'overflow-x-auto', 'my-3', 'border', 'border-gray-200');
+                        pre.querySelectorAll('code').forEach(code => {
+                            code.classList.add('bg-transparent', 'p-0', 'border-0', 'text-sm', 'font-mono');
+                        });
+                    });
+                    
+                    // Style blockquotes
+                    container.querySelectorAll('blockquote').forEach(quote => {
+                        quote.classList.add('border-l-4', 'border-blue-500', 'pl-4', 'py-2', 'my-3', 'bg-blue-50', 'rounded-r');
+                    });
+                    
+                    // Style lists
+                    container.querySelectorAll('ul,ol').forEach(list => {
+                        list.classList.add('my-3', 'ml-6');
+                        list.querySelectorAll('li').forEach(item => item.classList.add('mb-1'));
+                    });
+                    
+                    // Style links
+                    container.querySelectorAll('a').forEach(link => {
+                        link.classList.add('text-blue-600', 'border-b', 'border-blue-500', 'hover:opacity-80', 'transition-opacity');
+                    });
+                    
+                    // Style horizontal rules
+                    container.querySelectorAll('hr').forEach(hr => {
+                        hr.classList.add('my-4', 'border-0', 'h-px', 'bg-gray-300');
+                    });
+                    
+                    // Style tables
+                    container.querySelectorAll('table').forEach(table => {
+                        table.classList.add('w-full', 'my-3', 'text-sm', 'border-collapse');
+                        table.querySelectorAll('th,td').forEach(cell => {
+                            cell.classList.add('p-2', 'border', 'border-gray-300');
+                        });
+                        table.querySelectorAll('th').forEach(header => {
+                            header.classList.add('bg-gray-50', 'font-semibold');
+                        });
+                    });
+                    
+                    // Style images
+                    container.querySelectorAll('img').forEach(img => {
+                        img.classList.add('max-w-full', 'h-auto', 'rounded');
+                    });
+                });
+            }
+            
+            // Apply styles initially
+            styleMarkdownElements();
+            
+            // Create observer to apply styles to dynamically added content
+            const observer = new MutationObserver(() => {
+                styleMarkdownElements();
+            });
+            
+            // Start observing the chat container for added nodes
+            observer.observe(document.getElementById('chat-container'), { 
+                childList: true,
+                subtree: true
+            });
+        });
+    </script>
 {% endblock %}

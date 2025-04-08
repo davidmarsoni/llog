@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "description": "Flask application with Google Cloud Storage and Tailwind CSS",
   "scripts": {
-    "build:css": "npx tailwindcss -i ./static/src/input.css -o ./static/css/tailwind.css --watch"
+    "build:css": "npx @tailwindcss/cli -i ./static/src/input.css -o ./static/css/tailwind.css --watch"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.14",
+    "@tailwindcss/cli": "^4.1.3",
+    "@tailwindcss/postcss": "^4.1.3",
     "postcss": "^8.4.23",
-    "tailwindcss": "^3.3.3",
+    "tailwindcss": "^4.1.3",
     "tailwindcss-animate": "^1.0.7"
   },
   "dependencies": {

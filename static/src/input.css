@@ -1,48 +1,264 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
+@plugin 'tailwindcss-animate';
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
+@custom-variant dark (&:is(.dark *));
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-sidebar: hsl(var(--sidebar-background));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: SF Pro Display, Helvetica, Arial, sans-serif;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-fade-out: fade-out 0.5s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-slide-down: slide-down 0.5s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
-  to {
-    transform: rotate(360deg);
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  @keyframes fade-out {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+  @keyframes slide-up {
+    0% {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes slide-down {
+    0% {
+      transform: translateY(-10px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 640px) {
+    max-width: 640px;
+  }
+  @media (width >= 768px) {
+    max-width: 768px;
+  }
+  @media (width >= 1024px) {
+    max-width: 1024px;
+  }
+  @media (width >= 1280px) {
+    max-width: 1280px;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
   }
 }
 
-.card {
-  padding: 2em;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
 }
 
-.read-the-docs {
-  color: #888;
+@utility glass {
+  @apply bg-white/70 backdrop-blur-lg border border-white/20;
+}
+
+@utility hover-lift {
+  @apply transition-transform duration-300 ease-out hover:-translate-y-1;
+}
+
+@utility page-transition {
+  @apply animate-fade-in;
+}
+
+@utility notion-content {
+  & h3 {
+    @apply text-lg font-semibold text-gray-800 mb-2;
+  }
+}
+
+@utility notion-form-section {
+  @apply border rounded-lg p-6 mb-6 bg-white shadow-xs;
+}
+
+@utility notion-form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+@utility page-loading {
+  /* Loading animation styles */
+  @apply transition-opacity duration-200;
+
+  .htmx-request-in-flight & {
+    @apply opacity-50;
+  }
+}
+
+@utility htmx-request-in-flight {
+  & .page-loading {
+    @apply opacity-50;
+  }
+
+  & .loading-indicator {
+    @apply opacity-100;
+  }
+}
+
+@utility loading-indicator {
+  .htmx-request-in-flight & {
+    @apply opacity-100;
+  }
+  @apply opacity-0 transition-opacity duration-200;
+}
+
+@utility progress-bar-animated {
+  /* Progress bar animation */
+  @apply relative overflow-hidden;
+
+  &::after {
+    content: '';
+    @apply absolute inset-0 bg-blue-400/30;
+    animation: progress-loading 1s infinite;
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@layer utilities {
+  #root {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .logo {
+    height: 6em;
+    padding: 1.5em;
+    will-change: filter;
+    transition: filter 300ms;
+  }
+  .logo:hover {
+    filter: drop-shadow(0 0 2em #646cffaa);
+  }
+  .logo.react:hover {
+    filter: drop-shadow(0 0 2em #61dafbaa);
+  }
+
+  @keyframes logo-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a:nth-of-type(2) .logo {
+      animation: logo-spin infinite 20s linear;
+    }
+  }
+
+  .card {
+    padding: 2em;
+  }
+
+  .read-the-docs {
+    color: #888;
+  }
 }
 
 @layer base {
@@ -104,66 +320,8 @@
 }
 
 @layer components {
-  .glass {
-    @apply bg-white/70 backdrop-blur-lg border border-white/20;
-  }
-  
-  .hover-lift {
-    @apply transition-transform duration-300 ease-out hover:-translate-y-1;
-  }
-  
-  .page-transition {
-    @apply animate-fade-in;
-  }
-
-  .notion-content h3 {
-    @apply text-lg font-semibold text-gray-800 mb-2;
-  }
-
-  .notion-form-section {
-    @apply border rounded-lg p-6 mb-6 bg-white shadow-sm;
-  }
-
-  .notion-form-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 gap-6;
-  }
-
-  /* Loading animation styles */
-  .page-loading {
-    @apply transition-opacity duration-200;
-  }
-
-  .htmx-request-in-flight .page-loading {
-    @apply opacity-50;
-  }
-
-  .htmx-request-in-flight .loading-indicator {
-    @apply opacity-100;
-  }
-  
-  .loading-indicator {
-    @apply opacity-0 transition-opacity duration-200;
-  }
-
-  /* Progress bar animation */
   @keyframes progress-loading {
     0% { transform: translateX(-100%); }
     100% { transform: translateX(100%); }
-  }
-
-  .progress-bar-animated {
-    @apply relative overflow-hidden;
-  }
-
-  .progress-bar-animated::after {
-    content: "";
-    @apply absolute inset-0 bg-blue-400/30;
-    animation: progress-loading 1s infinite;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
   }
 }

@@ -36,7 +36,7 @@
         </div>
         
         <!-- Notion Tab Content -->
-        <div id="notion-tab" class="tab-content bg-white p-6 rounded-lg border shadow-sm mt-2">
+        <div id="notion-tab" class="tab-content bg-white p-6 rounded-lg border shadow-xs mt-2">
             <div class="mb-4">
                 <h2 class="text-2xl font-bold text-gray-800">Cache Notion Content</h2>
                 <p class="text-gray-600 mt-1">
@@ -51,7 +51,7 @@
                 <!-- Input Mode Selection -->
                 <div class="flex justify-center mb-6">
                     <div class="inline-flex rounded-lg border bg-gray-50 p-1">
-                        <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                        <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
                             <input type="radio" name="input_type" value="database" class="sr-only" {% if not request.form.get('page_id') %}checked{% endif %} 
                                    onclick="toggleInputMode('database')">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -61,7 +61,7 @@
                             </svg>
                             <span>Database</span>
                         </label>
-                        <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-sm{% endif %}">
+                        <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
                             <input type="radio" name="input_type" value="page" class="sr-only" {% if request.form.get('page_id') %}checked{% endif %}
                                    onclick="toggleInputMode('page')">
                             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -87,7 +87,7 @@
                                 name="database_id"
                                 placeholder="e.g., dc89fddeb09148639940a75e7759b8bc"
                                 value="{{ request.form.get('database_id', '') }}"
-                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
                             <p class="text-sm text-gray-500 mt-1">
                                 Enter the Notion database ID to cache all its pages.
@@ -107,7 +107,7 @@
                                 name="custom_name"
                                 placeholder="e.g., My Project Documentation"
                                 value="{{ request.form.get('custom_name', '') }}"
-                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
                             <p class="text-sm text-gray-500 mt-1">
                                 Provide a custom name for this database (defaults to the name from Notion if left blank).
@@ -117,7 +117,7 @@
                         <div>
                             <label for="notion_folder_path" class="block text-gray-700 font-medium mb-1">Save to Folder</label>
                             <select name="folder_path" id="notion_folder_path" 
-                                    class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-indigo-500 focus:border-indigo-500">
                                 {% for folder in folders %}
                                     <option value="{{ folder.path }}">
                                         {% if folder.path == '' %}
@@ -145,7 +145,7 @@
                                 name="page_id"
                                 placeholder="e.g., 9917363395904835a604ca7a6a358579"
                                 value="{{ request.form.get('page_id', '') }}"
-                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
                             <p class="text-sm text-gray-500 mt-1">
                                 Enter a single page ID to cache just that page.
@@ -165,7 +165,7 @@
                                 name="custom_name" 
                                 placeholder="e.g., Project Requirements"
                                 value="{{ request.form.get('custom_name', '') }}"
-                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                                class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
                             <p class="text-sm text-gray-500 mt-1">
                                 Provide a custom name for this page (defaults to the page title from Notion if left blank).
@@ -175,7 +175,7 @@
                         <div>
                             <label for="notion_folder_path" class="block text-gray-700 font-medium mb-1">Save to Folder</label>
                             <select name="folder_path" id="notion_folder_path" 
-                                    class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-indigo-500 focus:border-indigo-500">
                                 {% for folder in folders %}
                                     <option value="{{ folder.path }}">
                                         {% if folder.path == '' %}
@@ -196,7 +196,7 @@
                     <button 
                         type="submit" 
                         id="cache-button" 
-                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                         Cache Notion Content
                     </button>
@@ -206,7 +206,7 @@
         </div>
         
         <!-- Document Upload Tab Content -->
-        <div id="document-tab" class="tab-content hidden bg-white p-6 rounded-lg border shadow-sm mt-2">
+        <div id="document-tab" class="tab-content hidden bg-white p-6 rounded-lg border shadow-xs mt-2">
             <div class="mb-4">
                 <h2 class="text-2xl font-bold text-gray-800">Upload Document</h2>
                 <p class="text-gray-600 mt-1">
@@ -232,7 +232,7 @@
                                     <path fill-rule="evenodd" d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z" clip-rule="evenodd" />
                                 </svg>
                                 <div class="mt-4 flex text-sm leading-6 text-gray-600">
-                                    <label for="document" class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500">
+                                    <label for="document" class="relative cursor-pointer rounded-md bg-white font-medium text-blue-600 focus-within:outline-hidden focus-within:ring-2 focus-within:ring-blue-500">
                                         <span>Upload a file</span>
                                         <input id="document" name="document" type="file" class="sr-only" accept=".pdf,.txt,.md" onchange="updateFileName()">
                                     </label>
@@ -284,7 +284,7 @@
                             id="document_name"
                             name="document_name"
                             placeholder="e.g., Project Specifications"
-                            class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-sm focus:ring-2 focus:ring-blue-500"
+                            class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                         >
                         <p class="text-sm text-gray-500 mt-1">
                             Provide a custom name for this document (defaults to filename if left blank).
@@ -294,7 +294,7 @@
                     <div>
                         <label for="doc_folder_path" class="block text-sm font-medium text-gray-700 mb-1">Save to Folder</label>
                         <select name="folder_path" id="doc_folder_path" 
-                                class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                             {% for folder in folders %}
                                 <option value="{{ folder.path }}">
                                     {% if folder.path == '' %}
@@ -314,7 +314,7 @@
                     <button 
                         type="submit" 
                         id="upload-button" 
-                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white font-medium shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                     >
                         Upload and Process Document
                     </button>
@@ -328,17 +328,17 @@
     <div class="flex gap-4 mb-6">
         <a href="{{ url_for('file_storage.view_files') }}" 
            id="view-content-button"
-           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
             View Cached Content
         </a>
         <a href="{{ url_for('main.home') }}" 
            id="home-button"
-           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
             Back to Home
         </a>
         <a href="{{ url_for('chatbot.chatbot_page') }}" 
            id="chatbot-button"
-           class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+           class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
             Go to AI Assistant
         </a>
     </div>
@@ -618,8 +618,8 @@
         if (mode === 'database') {
             databaseSection.classList.remove('hidden');
             pageSection.classList.add('hidden');
-            databaseLabel.classList.add('bg-white', 'shadow-sm');
-            pageLabel.classList.remove('bg-white', 'shadow-sm');
+            databaseLabel.classList.add('bg-white', 'shadow-xs');
+            pageLabel.classList.remove('bg-white', 'shadow-xs');
             
             // Clear the page fields and set the custom_name field to use the database one
             document.getElementById('page_id').value = '';
@@ -628,8 +628,8 @@
         } else {
             databaseSection.classList.add('hidden');
             pageSection.classList.remove('hidden');
-            databaseLabel.classList.remove('bg-white', 'shadow-sm');
-            pageLabel.classList.add('bg-white', 'shadow-sm');
+            databaseLabel.classList.remove('bg-white', 'shadow-xs');
+            pageLabel.classList.add('bg-white', 'shadow-xs');
             
             // Clear the database fields and set the custom_name field to use the page one
             document.getElementById('database_id').value = '';

@@ -10,21 +10,21 @@
             Metadata: {{ metadata.title or file_id }}
         </h1>
         <div class="flex space-x-2">
-            <a href="{{ url_for('file_storage.view_files') }}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow">
+            <a href="{{ url_for('file_storage.view_files') }}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm">
                 Back to Content
             </a>
-            <button id="generate-metadata-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow flex items-center">
+            <button id="generate-metadata-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm flex items-center">
                 <span class="loading loading-spinner loading-xs mr-2 hidden" id="generate-spinner"></span>
                 <span id="generate-btn-text">Generate AI Metadata</span>
             </button>
-            <button id="save-metadata-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow">
+            <button id="save-metadata-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm">
                 Save Changes
             </button>
         </div>
     </div>
 
     <!-- Alert message -->
-    <div id="alert-container" class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm hidden">
+    <div id="alert-container" class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-xs hidden">
         <div id="alert-message"></div>
     </div>
 
@@ -32,14 +32,14 @@
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-sm">{{ message }}</div>
+                <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-xs">{{ message }}</div>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
     <!-- File path display -->
     {% if metadata.folder %}
-    <div class="mb-6 bg-white p-4 rounded-lg shadow">
+    <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
         <div class="flex flex-wrap items-center text-sm text-gray-600">
             <!-- Path display -->
             <div class="flex items-center">
@@ -76,7 +76,7 @@
     {% endif %}
 
     <!-- Main metadata card -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
             <div>
                 <h2 class="text-xl font-bold">File Details</h2>
@@ -110,21 +110,21 @@
                         <div>
                             <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
                             <input type="text" id="title" name="title" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ metadata.title }}" required>
                         </div>
                         
                         <div>
                             <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
                             <input type="text" id="type" name="type" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50" 
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs bg-gray-50" 
                                    value="{{ metadata.type }}" readonly>
                         </div>
                         
                         <div>
                             <label for="folder" class="block text-sm font-medium text-gray-700 mb-1">Folder</label>
                             <select name="folder" id="folder" 
-                                    class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                    class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                                 {% for folder in folders %}
                                     <option value="{{ folder.path }}" {% if metadata.folder == folder.path %}selected{% endif %}>
                                         {% if folder.path == '' %}
@@ -141,7 +141,7 @@
                         <div>
                             <label for="format" class="block text-sm font-medium text-gray-700 mb-1">Format</label>
                             <input type="text" id="format" name="format" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs bg-gray-50"
                                    value="{{ metadata.format }}" readonly>
                         </div>
                         {% endif %}
@@ -149,7 +149,7 @@
                         <div>
                             <label for="created_at" class="block text-sm font-medium text-gray-700 mb-1">Created At</label>
                             <input type="text" id="created_at" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs bg-gray-50"
                                    value="{{ metadata.created_at | timestamp_to_date }}" readonly>
                         </div>
                         
@@ -157,7 +157,7 @@
                         <div>
                             <label for="filename" class="block text-sm font-medium text-gray-700 mb-1">Original Filename</label>
                             <input type="text" id="filename" name="filename" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm bg-gray-50"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs bg-gray-50"
                                    value="{{ metadata.filename }}" readonly>
                         </div>
                         {% endif %}
@@ -168,21 +168,21 @@
                         <div>
                             <label for="summary" class="block text-sm font-medium text-gray-700 mb-1">Summary</label>
                             <textarea id="summary" name="auto_metadata.summary" 
-                                      class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" 
+                                      class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500" 
                                       rows="6">{{ metadata.auto_metadata.summary }}</textarea>
                         </div>
                         
                         <div>
                             <label for="language" class="block text-sm font-medium text-gray-700 mb-1">Language</label>
                             <input type="text" id="language" name="auto_metadata.language" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ metadata.auto_metadata.language }}">
                         </div>
                         
                         <div>
                             <label for="content_type" class="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
                             <input type="text" id="content_type" name="auto_metadata.contentType" 
-                                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500"
                                    value="{{ metadata.auto_metadata.contentType }}">
                         </div>
                     </div>
@@ -205,7 +205,7 @@
                             {% for theme in metadata.auto_metadata.themes %}
                                 <div class="flex items-center gap-2">
                                     <input type="text" name="auto_metadata.themes[]" value="{{ theme }}" 
-                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                           class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                                     <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -229,7 +229,7 @@
                             {% for topic in metadata.auto_metadata.topics %}
                                 <div class="flex items-center gap-2">
                                     <input type="text" name="auto_metadata.topics[]" value="{{ topic }}" 
-                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                           class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                                     <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -258,7 +258,7 @@
                             {% for keyword in metadata.auto_metadata.keywords %}
                                 <div class="flex items-center gap-2">
                                     <input type="text" name="auto_metadata.keywords[]" value="{{ keyword }}" 
-                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                           class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                                     <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -282,7 +282,7 @@
                             {% for entity in metadata.auto_metadata.entities %}
                                 <div class="flex items-center gap-2">
                                     <input type="text" name="auto_metadata.entities[]" value="{{ entity }}" 
-                                           class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                           class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
                                     <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
         div.className = 'flex items-center gap-2';
         div.innerHTML = `
             <input type="text" name="${name}[]" 
-                   class="w-full px-4 py-2 border rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                   class="w-full px-4 py-2 border rounded-md shadow-xs focus:ring-blue-500 focus:border-blue-500">
             <button type="button" class="px-2 py-2 text-red-600 hover:text-red-800 remove-item-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
@@ -363,11 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Set alert style based on type
         if (type === 'success') {
-            alertContainer.className = 'mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-sm';
+            alertContainer.className = 'mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-xs';
         } else if (type === 'error') {
-            alertContainer.className = 'mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-sm';
+            alertContainer.className = 'mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded shadow-xs';
         } else {
-            alertContainer.className = 'mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-sm';
+            alertContainer.className = 'mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 text-blue-700 rounded shadow-xs';
         }
         
         alertMessage.textContent = message;
