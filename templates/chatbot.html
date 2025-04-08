@@ -333,10 +333,9 @@
                             const messageContent = lastMessage.querySelector('.bg-blue-100');
                             if (messageContent) {
                                 // Apply markdown parsing
-                                const mdContentDiv = messageContent.querySelector('div');
-                                if (mdContentDiv) {
-                                    mdContentDiv.innerHTML = marked.parse(mdContentDiv.textContent);
-                                }
+                                // If no div is present, parse the content directly
+                                const textContent = messageContent.textContent;
+                                messageContent.innerHTML = marked.parse(textContent);
                                 messageContent.classList.add('markdown-content');
                             }
                         }
