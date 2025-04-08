@@ -105,10 +105,6 @@ def _save_empty_folders():
     except Exception as e:
         current_app.logger.error(f"Error saving empty folders: {str(e)}")
 
-def _is_cache_valid():
-    """Check if the cache is still valid based on TTL"""
-    return (_file_index_cache['data'] is not None and 
-            time.time() - _file_index_cache['timestamp'] < CACHE_TTL)
 
 def _is_folder_cache_valid():
     """Check if the folder cache is still valid based on TTL"""

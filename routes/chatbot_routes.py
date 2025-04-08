@@ -46,13 +46,14 @@ def get_query_response():
     try:
         message = request.form.get('message', '').strip()
         lstMessageHistory = request.form.getlist('lstMessagesHistory[]')
-        creativity = request.form.get('creativity', '50')
+        creativity = request.form.get('creativity', '1')
         max_tokens = request.form.get('maxToken', '2000')
         useRag = request.form.get('useRag', 'false').lower() == 'true'
         mode = request.form.get('mode', 'files')
         listOfIndexes = request.form.getlist('listOfIndexes[]')
         
-        response = get_query_response_full(
+        # Get query response (it returns a generator)
+        response_generator = get_query_response_full(
             message = message,
             lstMessageHistory=lstMessageHistory,
             creativity=creativity,
@@ -62,12 +63,19 @@ def get_query_response():
             listOfIndexes=listOfIndexes
         )
         
-        # cache evential error
-        if response.status_code != 200:
-            return jsonify({"error": response.text}), response.status_code
+        # Collect the generated response content
+        response_content = ""
+        for chunk in response_generator:
+            if chunk:
+                response_content += chunk
         
-        # return the response as JSON
-        return jsonify(response.json())
+        # Return the complete response as JSON
+        #return jsonify({"response": response_content})
+        return render_template('components/chat_messages.html',
+                             user_message=message,
+                             ai_response=response_content,
+                             ai_only=True,
+                             response_element_id=1)  # Pass the response element ID to the template
         
     except Exception as e:
         current_app.logger.error(f"Error getting query response: {str(e)}")
@@ -79,7 +87,7 @@ def get_agent_response():
     try:
         message = request.form.get('message', '').strip()
         lstMessageHistory = request.form.getlist('lstMessagesHistory[]')
-        creativity = request.form.get('creativity', '50')
+        creativity = request.form.get('creativity', '1')
         maxTokens = request.form.get('maxToken', '2000')
         modules = request.form.get('modules', '')
         useRag = request.form.get('useRag', 'false').lower() == 'true'
@@ -119,8 +127,14 @@ def get_agent_response():
         response = loop.run_until_complete(run_async_function())
         
         # return the response as JSON
+        print("Fin de process Agent !!!!!!!!!!!")
         print(response)
-        return jsonify(response)
+        #return jsonify(response)
+        return render_template('components/chat_messages.html',
+                             user_message=message,
+                             ai_response=response,
+                             ai_only=True,
+                             response_element_id=1)  # Pass the response element ID to the template
             
         
     except Exception as e:

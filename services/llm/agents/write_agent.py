@@ -7,70 +7,25 @@ import os
 
 # Load environment variables from .env file
 load_dotenv()
-tavily_api_key = os.getenv("TAVILY_API_KEY") 
 
+write_agent = GenericFunctionCallingAgent.from_tools(
+    tools=[],
+    llm=llm,
+    verbose=True,
+    allow_parallel_tool_calls=False,
+    system_prompt="""You are an agent that writes structured, well-organized answers based on research provided by another agent.
+                Instructions:
+                1. Structure your response using proper Markdown formatting
+                2. Use headings (## and ###) to organize content logically
+                3. Use bullet points or numbered lists where appropriate
+                4. Highlight important concepts using **bold** or *italic* text
+                5. Use code blocks with syntax highlighting when presenting code or technical snippets
+                6. Include relevant quotes from research using > blockquotes
+                7. Keep paragraphs concise and focused on one idea
+                8. Adapt your structure based on the context and type of question
+                9. Always provide a brief introduction and conclusion
+                10. Maintain a clear and professional tone throughout
 
-async def write_agent(
-    context: str,
-    query: str,
-    tavily_api_key: str = tavily_api_key,
-) -> str:
-    """Write agent function to generate content based on context and query."""
-    
-    # Initialize the Tavily client
-    client = AsyncTavilyClient(api_key=tavily_api_key)
-
-    # Fetch context
-    context = await get_context(context)
-    print("Fetched context:", context)
-    # Organize context
-    organized_context = await organize_context(context)
-    print("Organized context:", organized_context)
-    # Write prompt
-    prompt = await write_prompt(organized_context)
-    print("Generated prompt:", prompt)
-    # Generate content using the LLM
-    output = await llm(prompt)
-    print("Generated output:", output)
-    
-    # Validate output
-    is_valid = await validate_output(output)
-    if not is_valid:
-        output = await rewrite(output)
-        print("Rewritting output:", output)
-    
-
-    return output
-
-# python
-async def get_context(context: str) -> dict:
-    print("==STARTING WRITE AGENT==")
-    print("Getting context:", context)
-    return {"context": context, "metadata": {"source": "query_agent"}}
-
-async def organize_context(context: dict) -> dict:
-    print("Organizing context:", context)
-    organized = {
-        "key_points": context.get("context", "").split(". "),
-        "metadata": context.get("metadata", {})
-    }
-    return organized
-
-async def write_prompt(organized_context: dict) -> str:
-    print("Writing prompt from organized context:", organized_context)
-    key_points = organized_context.get("key_points", [])
-    prompt = "Write an article based on the following points:\n"
-    for i, point in enumerate(key_points, 1):
-        prompt += f"{i}. {point}\n"
-    return prompt
-
-async def validate_output(output: str) -> bool:
-    """Validate the generated content."""
-    # Example: Check if the output meets basic criteria
-    return len(output) > 50  # Ensure the output is not too short
-
-async def rewrite(output: str) -> str:
-    print("Rewriting output:", output)
-    print("==END OF WRITE AGENT==")
-    # Example: Add more details to the output
-    return output + "\n\nPlease expand on the above points for more detail."
+                Always analyze the context and research data thoroughly before structuring your response, and ensure your answer directly addresses the original question.
+                """
+)
