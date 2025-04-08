@@ -149,8 +149,6 @@ def get_file_metadata(file_id):
         # Look for metadata in all possible locations
         metadata_paths = [
             f"cache/metadata_{clean_id}.pkl",
-            f"cache/metadata_db_{clean_id}.pkl",
-            f"cache/metadata_doc_{clean_id}.pkl"
         ]
         
         metadata = None

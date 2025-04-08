@@ -58,10 +58,10 @@
                         <p class="text-sm text-gray-600 mb-2">Select content to use for context:</p>
                         <div id="content-indexes-container" class="max-h-[500px] overflow-y-auto border rounded-md p-2 bg-white">
                             {% if indexes %}
-                                {% for index in indexes %}
-                                <div class="flex items-center mb-1">
+                                {% for index in indexes %}                                <div class="flex items-center mb-1">
                                     <input type="checkbox" 
                                            id="content-{{ index.id }}" 
+                                           value="{{ index.id }}"
                                            class="content-index-checkbox mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                                     <label for="content-{{ index.id }}" class="text-sm">
                                         <span class="font-medium">{{ index.title }}</span>
@@ -111,7 +111,7 @@
                 </div>
 
                 <form id="chat-form"
-                      hx-post="{{ url_for('chatbot.send_message') }}"
+                      hx-post="{{ url_for('chatbot.get_query_response') }}"
                       hx-target="#ai-response-placeholder"
                       hx-swap="outerHTML"
                       hx-indicator="#send-loading"

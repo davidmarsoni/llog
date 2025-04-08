@@ -9,8 +9,7 @@ from services.llm import (
     get_available_indexes,
     query_content,
     get_content_metadata,
-    get_recommender_system,
-    get_llm_response
+    get_recommender_system
 )
 
 # Add a global flag to track loading state
@@ -43,6 +42,5 @@ __all__ = [
     'get_available_indexes',
     'query_content',
     'get_content_metadata',
-    'get_recommender_system',
-    'get_llm_response'
+    'get_recommender_system'
 ]
