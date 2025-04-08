@@ -4,6 +4,7 @@ Main application module for Flask app
 from flask import Flask, jsonify
 from dotenv import load_dotenv
 import os
+import logging
 
 def create_app(test_config=None):
     """Create and configure the Flask application."""
@@ -12,6 +13,25 @@ def create_app(test_config=None):
     
     # Create Flask app
     app = Flask(__name__)
+    
+    # Configure logging to ensure all messages appear in the terminal
+    if app.debug:
+        # Set Flask logger to output all levels of messages
+        app.logger.setLevel(logging.INFO)
+        
+        # Create a stream handler for terminal output
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        
+        # Create a formatter and add it to the handler
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+        handler.setFormatter(formatter)
+        
+        # Add the handler to the logger
+        app.logger.addHandler(handler)
+        
+        # Ensure propagation is enabled
+        app.logger.propagate = True
     
     # Load configuration
     app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-key-for-testing")

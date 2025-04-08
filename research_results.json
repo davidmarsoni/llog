@@ -1,0 +1,505 @@
+{
+  "status": "success",
+  "query": "BPMN",
+  "total_results": 6,
+  "themes": [],
+  "keywords": [
+    {
+      "keyword": "business",
+      "count": 10,
+      "relevance": 1.0
+    },
+    {
+      "keyword": "processes",
+      "count": 7,
+      "relevance": 0.8200000000000001
+    },
+    {
+      "keyword": "bpmn",
+      "count": 6,
+      "relevance": 0.76
+    },
+    {
+      "keyword": "graphical",
+      "count": 4,
+      "relevance": 0.64
+    },
+    {
+      "keyword": "representation",
+      "count": 3,
+      "relevance": 0.5800000000000001
+    },
+    {
+      "keyword": "specifying",
+      "count": 3,
+      "relevance": 0.5800000000000001
+    },
+    {
+      "keyword": "process",
+      "count": 3,
+      "relevance": 0.5800000000000001
+    },
+    {
+      "keyword": "model",
+      "count": 3,
+      "relevance": 0.5800000000000001
+    },
+    {
+      "keyword": "notation",
+      "count": 2,
+      "relevance": 0.52
+    },
+    {
+      "keyword": "provided",
+      "count": 2,
+      "relevance": 0.52
+    },
+    {
+      "keyword": "context",
+      "count": 2,
+      "relevance": 0.52
+    },
+    {
+      "keyword": "information",
+      "count": 2,
+      "relevance": 0.52
+    },
+    {
+      "keyword": "provides",
+      "count": 1,
+      "relevance": 0.46
+    },
+    {
+      "keyword": "standard",
+      "count": 1,
+      "relevance": 0.46
+    },
+    {
+      "keyword": "that",
+      "count": 1,
+      "relevance": 0.46
+    }
+  ],
+  "sources": [
+    {
+      "id": "0930c7a9-3986-4812-afda-69b65119d09a",
+      "title": "Test Page (Info about BPM roles)",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is a graphical representation for specifying business processes in a business process model. It provides a standard notation that is readily understandable by all business stakeholders, including business analysts who create and refine the processes, technical developers responsible for implementing the processes, and business managers who monitor and manage the processes.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "0930c7a9-3986-4812-afda-69b65119d09a",
+        "notion_id": "114b6e3834aa458089661207c2412c3c",
+        "title": "Test Page (Info about BPM roles)",
+        "type": "page",
+        "created_at": 1743508128.8457105,
+        "auto_metadata": {
+          "themes": [
+            "Business Process Management",
+            "Integration Development",
+            "Stakeholder Management",
+            "Testing and Quality Assurance",
+            "Technical Requirements"
+          ],
+          "topics": [
+            "Roles in BPM",
+            "Stakeholder Identification",
+            "Functional and Technical Requirements",
+            "Integration Design",
+            "Development Process",
+            "System Integration Testing (SIT)",
+            "User Acceptance Testing (UAT)",
+            "Go-live Coordination",
+            "Hypercare Management"
+          ],
+          "entities": [
+            "CPO",
+            "IT teams",
+            "Project Manager",
+            "Process Owner",
+            "Business Analysts"
+          ],
+          "keywords": [
+            "Business Process Management",
+            "Integration",
+            "Stakeholders",
+            "Testing",
+            "Deployment",
+            "Functional Requirements",
+            "Technical Requirements",
+            "Hypercare",
+            "User Acceptance Testing",
+            "System Integration Testing",
+            "Cooperation",
+            "Error Handling",
+            "Documentation",
+            "Workflow",
+            "Optimization"
+          ],
+          "summary": "The document outlines the roles and responsibilities in Business Process Management (BPM), focusing on the integration of technical and business requirements. It emphasizes the importance of stakeholder identification, testing phases, and the need for thorough documentation to ensure successful project outcomes.",
+          "language": "English",
+          "contentType": "report",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_0930c7a9-3986-4812-afda-69b65119d09a.pkl"
+      }
+    },
+    {
+      "id": "2ab9f710-9541-4ecb-9789-eb32bcbbb138",
+      "title": "Bell P-39 Airacobra (Robert F. Dorr, Jerry C. Scutts) (OCR)",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is a graphical representation for specifying business processes in a business process model.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "2ab9f710-9541-4ecb-9789-eb32bcbbb138",
+        "title": "Bell P-39 Airacobra (Robert F. Dorr, Jerry C. Scutts) (OCR)",
+        "type": "document",
+        "format": "pdf",
+        "filename": "Bell P-39 Airacobra (Robert F. Dorr, Jerry C. Scutts) (OCR).pdf",
+        "pages": 160,
+        "created_at": 1743188229.243151,
+        "auto_metadata": {
+          "themes": [
+            "Aviation History",
+            "World War II",
+            "Aircraft Design",
+            "Military Technology",
+            "Historical Analysis"
+          ],
+          "topics": [
+            "Bell P-39 Airacobra",
+            "Low-level combat effectiveness",
+            "Design and development",
+            "Service in the Far East",
+            "Lend Lease program",
+            "Comparison with other aircraft",
+            "Robert F. Dorr's contributions",
+            "Impact on dogfights",
+            "Criticism and praise of the Airacobra",
+            "Allison engine features"
+          ],
+          "entities": [
+            "Robert F. Dorr",
+            "Jerry C. Scutts",
+            "Bell Aircraft Corporation",
+            "Crowood Press",
+            "U.S. Air Force",
+            "UK Civil Aviation Authority",
+            "Japan",
+            "Russia"
+          ],
+          "keywords": [
+            "Bell P-39 Airacobra",
+            "aviation",
+            "World War II",
+            "ground attack",
+            "military aircraft",
+            "Lend Lease",
+            "aviation historian",
+            "dogfights",
+            "air combat",
+            "engine performance",
+            "historical analysis",
+            "aeroplane design",
+            "Cobra aircraft",
+            "combat effectiveness"
+          ],
+          "summary": "The document provides an analysis of the Bell P-39 Airacobra, focusing on its design, combat performance, and historical significance during World War II. Despite facing criticism for its altitude performance, it was recognized for its effectiveness in low-level operations and ground attack roles, particularly in the Far East and Russia.",
+          "language": "English",
+          "contentType": "book excerpt",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_2ab9f710-9541-4ecb-9789-eb32bcbbb138.pkl",
+        "batched": true,
+        "batch_count": 2
+      }
+    },
+    {
+      "id": "85ba86ba-6b6c-4453-bc4e-1dc285825413",
+      "title": "CVPC - présentation",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is a graphical representation for specifying business processes in a business process model.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "85ba86ba-6b6c-4453-bc4e-1dc285825413",
+        "title": "CVPC - présentation",
+        "type": "document",
+        "format": "pdf",
+        "filename": "CVPC - présentation.pdf",
+        "pages": 192,
+        "created_at": 1743188179.1325257,
+        "auto_metadata": {
+          "themes": [
+            "Déclaration d'impôt",
+            "Fiscalité",
+            "Logiciel VSTAX",
+            "Formation fiscale",
+            "Réglementations fiscales"
+          ],
+          "topics": [
+            "Remplissage de déclaration d'impôt",
+            "Questions générales sur la fiscalité",
+            "Nouvelles fonctionnalités du logiciel VSTAX",
+            "Directives fiscales en ligne",
+            "Impôts spéciaux",
+            "Droits et devoirs des contribuables",
+            "Guide de taxation",
+            "Déclaration en format PDF",
+            "Délais de dépôt de déclaration",
+            "Révision de l'impôt à la source"
+          ],
+          "entities": [
+            "SCC",
+            "Nathalie",
+            "Damien",
+            "VS Tax",
+            "Service cantonal des contributions"
+          ],
+          "keywords": [
+            "déclaration d'impôt",
+            "fiscalité",
+            "VSTAX",
+            "formation",
+            "directives fiscales",
+            "impôts spéciaux",
+            "résident suisse",
+            "taxation ordinaire",
+            "droit cantonal",
+            "délais de dépôt"
+          ],
+          "summary": "Le document présente un cours sur la déclaration d'impôt, en mettant l'accent sur l'utilisation du logiciel VSTAX et en fournissant des informations générales sur les obligations fiscales. Les intervenants encouragent les participants à poser des questions sur la pratique fiscale et les nouvelles fonctionnalités du logiciel.",
+          "language": "francais",
+          "contentType": "article",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_85ba86ba-6b6c-4453-bc4e-1dc285825413.pkl",
+        "batched": true,
+        "batch_count": 2
+      }
+    },
+    {
+      "id": "c0062eb1-343f-4601-b055-dc22f4ce1a95",
+      "title": "Llog readme 28.03.2025",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is not directly related to the provided context information.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "c0062eb1-343f-4601-b055-dc22f4ce1a95",
+        "doc_id": "doc_1743190715",
+        "title": "Llog readme 28.03.2025",
+        "type": "document",
+        "format": "markdown",
+        "filename": "README.md",
+        "file_size_bytes": 7466,
+        "created_at": 1743190722.184044,
+        "auto_metadata": {
+          "themes": [
+            "Educational Technology",
+            "Software Development",
+            "Cloud Computing"
+          ],
+          "topics": [
+            "Llog Project Overview",
+            "Local Setup Instructions",
+            "Environment Variables Configuration",
+            "Google Cloud Storage Integration",
+            "Notion API Usage",
+            "OpenAI API Integration",
+            "Tavily API Configuration",
+            "Project Deployment"
+          ],
+          "entities": [
+            "HES-SO",
+            "LlamaIndex",
+            "Notion",
+            "Google Cloud",
+            "OpenAI",
+            "Tavily"
+          ],
+          "keywords": [
+            "Llog",
+            "HES-SO",
+            "Notion",
+            "LlamaIndex",
+            "Google Cloud",
+            "OpenAI",
+            "Tavily",
+            "API",
+            "Environment Variables",
+            "Software Installation",
+            "Deployment",
+            "Backend",
+            "Frontend",
+            "CSS",
+            "Virtual Environment"
+          ],
+          "summary": "The document outlines the Llog project, an HES-SO initiative utilizing LlamaIndex for searching notes in Notion. It provides detailed instructions for local setup, environment configuration, and deployment to Google Cloud Run.",
+          "language": "English",
+          "contentType": "project documentation",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_c0062eb1-343f-4601-b055-dc22f4ce1a95.pkl"
+      }
+    },
+    {
+      "id": "e6a398cd-5472-4c23-8c85-0a6929c20149",
+      "title": "crash-2025-01-22_09.49.35-server.txt",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is not mentioned in the provided context information.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "e6a398cd-5472-4c23-8c85-0a6929c20149",
+        "doc_id": "doc_1743190211",
+        "title": "crash-2025-01-22_09.49.35-server.txt",
+        "type": "document",
+        "format": "text",
+        "filename": "crash-2025-01-22_09.49.35-server.txt",
+        "file_size_bytes": 32447,
+        "created_at": 1743190216.8288422,
+        "auto_metadata": {
+          "themes": [
+            "Minecraft Modding",
+            "Error Reporting",
+            "Game Development",
+            "Server Performance",
+            "Java Exception Handling"
+          ],
+          "topics": [
+            "Crash Report Analysis",
+            "Null Pointer Exception",
+            "Minecraft Server Logs",
+            "System Configuration Details",
+            "Java Version Compatibility",
+            "Minecraft Mod: Cobblemon",
+            "Operating System Information",
+            "Hardware Specifications",
+            "Event Handling in Minecraft",
+            "Error Resolution"
+          ],
+          "entities": [
+            "Minecraft",
+            "Cobblemon",
+            "Eclipse Adoptium",
+            "OpenJDK",
+            "AMD Ryzen 9 7900"
+          ],
+          "keywords": [
+            "Minecraft",
+            "Crash Report",
+            "Server Error",
+            "Java Exception",
+            "NullPointerException",
+            "Cobblemon",
+            "Game Server",
+            "Java Version",
+            "Linux",
+            "Modding",
+            "EventBus",
+            "Minecraft Forge",
+            "Error Handling",
+            "Operating System"
+          ],
+          "summary": "The document is a crash report for a Minecraft server, detailing an exception that occurred during the server tick loop. It includes information about the environment, the version of Minecraft and mods in use, and technical details for troubleshooting the error.",
+          "language": "English",
+          "contentType": "Crash Report",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_e6a398cd-5472-4c23-8c85-0a6929c20149.pkl"
+      }
+    },
+    {
+      "id": "f0e6b80b-796f-4fe0-853e-d0a4d1308672",
+      "title": "Cloud DB",
+      "themes": [],
+      "content": [
+        {
+          "text": "BPMN is a standardized graphical notation for drawing business processes in a workflow.",
+          "relevance": 1.0
+        }
+      ],
+      "metadata": {
+        "id": "f0e6b80b-796f-4fe0-853e-d0a4d1308672",
+        "notion_id": "9e54f34e6f1d4a8db7b416982648bceb",
+        "title": "Cloud DB",
+        "type": "database",
+        "page_count": 5,
+        "page_ids": [
+          "6b1aa04e-5470-4ef3-a10e-5c3cf0b81d7b",
+          "71c1e18d-0a43-4d48-be2f-059d68c27d2c",
+          "3c640750-30ac-4101-8f0b-abe2f073786b",
+          "0e8f513f-e43a-453a-8565-c956eab3bedf",
+          "2af54566-8510-4dec-841b-dffa613d6d89"
+        ],
+        "created_at": 1743189487.051012,
+        "auto_metadata": {
+          "themes": [
+            "Cloud Computing",
+            "Big Data",
+            "Data Privacy and Security",
+            "Infrastructure as a Service (IaaS)"
+          ],
+          "topics": [
+            "Advantages and disadvantages of Azure",
+            "MapReduce programming model",
+            "Big data significance in the economy",
+            "Cloud service providers",
+            "Pricing strategies for cloud services",
+            "Data privacy laws",
+            "Scalability in cloud computing",
+            "Cloud layers: IaaS, PaaS, SaaS"
+          ],
+          "entities": [
+            "Azure",
+            "Amazon (AWS)",
+            "Google Cloud",
+            "Hadoop",
+            "MapReduce",
+            "NSA",
+            "GDPR"
+          ],
+          "keywords": [
+            "Cloud Computing",
+            "Big Data",
+            "Data Privacy",
+            "Infrastructure as a Service",
+            "Azure",
+            "Amazon Web Services",
+            "Google Cloud",
+            "MapReduce",
+            "Scalability",
+            "Data Security",
+            "Privacy Laws",
+            "Virtual Machine",
+            "Cloud Providers",
+            "Pricing Strategies"
+          ],
+          "summary": "The document provides an overview of cloud computing, emphasizing Azure's advantages and disadvantages, the role of big data in the current economy, and key concepts in IaaS. It also discusses data privacy issues and pricing strategies for various cloud service providers.",
+          "language": "French",
+          "contentType": "Course Notes",
+          "auto_generated": true
+        },
+        "_storage_path": "cache/metadata_f0e6b80b-796f-4fe0-853e-d0a4d1308672.pkl"
+      }
+    }
+  ]
+}

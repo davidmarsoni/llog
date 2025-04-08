@@ -1,0 +1,27 @@
+{
+  "status": "success",
+  "review": {
+    "type": "comprehensive",
+    "summary": "The overall quality of the content is extremely poor, scoring 0/10 in writing style, factual accuracy, and SEO optimization. Key strengths in writing are nonexistent, and there are no identified factual issues. Overall, the content fails to engage readers or provide reliable information, making it ineffective for its intended purpose.",
+    "writing": {
+      "strengths": [],
+      "weaknesses": [],
+      "suggestions": [],
+      "style_score": 0
+    },
+    "facts": {
+      "questionable_statements": [],
+      "incorrect_statements": [],
+      "verification_suggestions": [],
+      "accuracy_score": 0
+    },
+    "seo": {
+      "keyword_analysis": {},
+      "content_suggestions": [],
+      "structure_suggestions": [],
+      "seo_score": 0
+    },
+    "overall_score": 0,
+    "priority_improvements": []
+  }
+}
