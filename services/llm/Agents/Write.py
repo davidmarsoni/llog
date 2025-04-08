@@ -6,7 +6,7 @@ import os
 from typing import List, Dict, Any, Optional
 import logging
 import re
-from services.llm.chat import get_llm_response
+from services.llm.llm_core import get_llm_response
 from services.llm.content import query_content
 
 class Write:

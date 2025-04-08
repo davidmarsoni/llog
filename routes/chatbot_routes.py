@@ -2,11 +2,11 @@
 Chatbot routes for the application
 """
 from flask import Blueprint, render_template, request, jsonify, current_app, make_response, Response, stream_with_context, session
-from services.llm_service import get_llm_response, get_available_indexes, get_streaming_response
+from services.llm_service import get_llm_response, get_available_indexes
 from services.llm.Agents.QueryResearch import QueryResearch
 from services.llm.Agents.Write import Write
 from services.llm.Agents.Review import Review
-import httpx
+from services.llm.chat import get_query_response_full, get_agent_response_full
 import json
 
 # Create a Blueprint for chatbot routes
@@ -43,6 +43,75 @@ def check_message_length():
     max_length = 2000
     return f"{length}/{max_length}"
 
+@chatbot_bp.route('/get-query-response', methods=['POST'])
+def get_query_response():
+    """Get the response for a specific query."""
+    try:
+        message = request.form.get('message', '').strip()
+        lstMessagesHistory = request.form.getlist('lstMessagesHistory[]')
+        creativity = request.form.get('creativity', '50')
+        max_tokens = request.form.get('maxToken', '2000')
+        useRag = request.form.get('useRag', 'false').lower() == 'true'
+        mode = request.form.get('mode', 'files')
+        list_of_indexes = request.form.getlist('list_of_indexes[]')
+        
+        response = get_query_response_full(
+            message = message,
+            lstMessagesHistory=lstMessagesHistory,
+            creativity=creativity,
+            max_tokens=max_tokens,
+            useRag=useRag,
+            mode=mode,
+            list_of_indexes=list_of_indexes
+        )
+        
+        # cache evential error
+        if response.status_code != 200:
+            return jsonify({"error": response.text}), response.status_code
+        
+        # return the response as JSON
+        return jsonify(response.json())
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting query response: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+    
+@chatbot_bp.route('/get-agent-response', methods=['POST'])
+def get_agent_response():
+    """Get the response from the agent."""
+    try:
+        message = request.form.get('message', '').strip()
+        lstMessageHistory = request.form.getlist('lstMessagesHistory[]')
+        creativity = request.form.get('creativity', '50')
+        maxTokens = request.form.get('maxToken', '2000')
+        modules = request.form.get('modules', '')
+        useRag = request.form.get('useRag', 'false').lower() == 'true'
+        mode = request.form.get('mode', 'files')
+        list_of_indexes = request.form.getlist('list_of_indexes[]')
+        
+        print(f"DEBUG : Message: {message}, Modules: {modules}, Use Rag: {useRag}, Mode: {mode}, List of Indexes: {list_of_indexes}")
+         
+        response = get_agent_response_full(
+            message = message,
+            lstMessageHistory=lstMessageHistory,
+            creativity=creativity,
+            maxTokens=maxTokens,
+            useRag=useRag,
+            modules=modules,
+            mode=mode,
+            listOfIndexes=list_of_indexes
+        )
+        
+        # return the response as JSON
+        print(response)
+        return jsonify(response.json())
+            
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting agent response: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 @chatbot_bp.route('/send-message', methods=['POST'])
 def send_message():
     """Process a message and return the chat update."""
@@ -51,6 +120,17 @@ def send_message():
         use_content = request.form.get('use_content', 'false').lower() == 'true'
         content_ids = request.form.getlist('content_ids[]')
         agent_type = request.form.get('agent_type', 'llm')  # Default to standard LLM
+        
+        # Get the response element ID from the form data
+        response_element_id = request.form.get('response_element_id', 'ai-response-placeholder')
+        
+        # Get advanced parameters
+        creativity = request.form.get('creativity', '50')
+        max_tokens = request.form.get('maxToken', '1000')
+        modules = request.form.get('modules', 'default')
+        use_rag = request.form.get('useRag', 'false').lower() == 'true'
+        
+        print(f"DEBUG : Message: {message}, Use Content: {use_content}, Content IDs: {content_ids}, Agent Type: {agent_type}")
         
         if not message:
             return "Please enter a message."
@@ -199,7 +279,8 @@ def send_message():
             )
             response_content = response.get('answer', 'Sorry, no response was generated.')
         
-        # Render the message pair template
+        # Render the message with a flag to only include AI response
+        # This flag will be used in the template to conditionally render parts
         return render_template('components/chat_messages.html',
                             user_message=message,
                             ai_response=response_content)

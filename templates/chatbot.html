@@ -1,124 +1,183 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <h1 class="text-3xl font-bold mb-4">{% block title %}AI Assistant{% endblock %}</h1>
+<!--<h1 class="text-3xl font-bold mb-4 mt-6">{% block title %}AI Assistant{% endblock %}</h1>-->
     
-    <div class="bg-white p-4 rounded border mb-6">
-        <!-- Content Selection -->
-        <div class="mb-4 p-4 border rounded bg-gray-50">
-            <h3 class="text-lg font-semibold mb-2">Knowledge Base</h3>
-            <div class="flex items-center mb-2">
-                <input type="checkbox" id="use-content" class="mr-2">
-                <label for="use-content">Use indexed content</label>
-            </div>
-            <div id="content-options" class="ml-6 hidden">
-                <p class="text-sm text-gray-600 mb-2">Select content to use for context:</p>
-                <div id="content-indexes-container" class="max-h-40 overflow-y-auto border rounded p-2 bg-white">
-                    {% if indexes %}
-                        {% for index in indexes %}
-                        <div class="flex items-center mb-1">
-                            <input type="checkbox" 
-                                   id="content-{{ index.id }}" 
-                                   class="content-index-checkbox mr-2"
-                                   value="{{ index.id }}">
-                            <label for="content-{{ index.id }}" class="text-sm">
-                                <span class="font-medium">{{ index.title }}</span>
-                                <span class="text-xs text-gray-500">({{ index.type }})</span>
-                            </label>
+    <div class="bg-white shadow rounded-lg p-6 mb-6">
+        <!-- Outer container with flex layout to accommodate content panel -->
+        <div class="flex w-full gap-4">
+            <!-- Content panel (hidden by default, will slide in when toggled) -->
+            <div id="content-options" class="w-0 h-0 overflow-hidden transition-all duration-300">
+                <div class="bg-gray-50 p-4 border rounded-lg h-full">
+                    <!-- Advanced Settings Section -->
+                    <div class="mb-4">
+                        <h3 class="font-semibold text-gray-700 mb-2">Advanced Settings</h3>
+                        
+                        <!-- Creativity Slider -->
+                        <div class="mb-4">
+                            <label for="creativity" class="block text-sm font-medium text-gray-700 mb-1">Creativity</label>
+                            <div class="flex items-center">
+                                <span class="text-xs text-gray-500 mr-2">Low</span>
+                                <input type="range" id="creativity" name="creativity" min="0" max="100" value="50" 
+                                       class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <span class="text-xs text-gray-500 ml-2">High</span>
+                            </div>
+                            <input type="hidden" name="creativity_value" id="creativity-value" value="50">
                         </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-sm text-gray-500">No indexed content available. 
-                           <a href="{{ url_for('file_storage.manage_files') }}" class="text-blue-500 hover:underline">
-                              Add some in the File Management page.
-                           </a>
-                        </p>
-                    {% endif %}
+                        
+                        <!-- Max Tokens -->
+                        <div class="mb-4">
+                            <label for="maxToken" class="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
+                            <input type="number" id="maxToken" name="maxToken" value="1000" min="100" max="4000" 
+                                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
+                        </div>
+                        
+                        <!-- Modules -->
+                        <div class="mb-4">
+                            <label for="modules" class="block text-sm font-medium text-gray-700 mb-1">Modules</label>
+                            <select id="modules" name="modules" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
+                                <option value="default">Default</option>
+                                <option value="summarization">Summarization</option>
+                                <option value="code">Code</option>
+                                <option value="creativity">Creativity</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Use RAG Toggle -->
+                        <div class="mb-4">
+                            <div class="flex items-center">
+                                <input type="checkbox" id="useRag" name="useRag" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                <label for="useRag" class="ml-2 block text-sm text-gray-700">Use RAG</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Content Selection Section - Now controlled by Use RAG -->
+                    <div id="content-selection-container" class="hidden">
+                        <h3 class="font-semibold text-gray-700 mb-2">Content Selection</h3>
+                        <p class="text-sm text-gray-600 mb-2">Select content to use for context:</p>
+                        <div id="content-indexes-container" class="max-h-[500px] overflow-y-auto border rounded-md p-2 bg-white">
+                            {% if indexes %}
+                                {% for index in indexes %}
+                                <div class="flex items-center mb-1">
+                                    <input type="checkbox" 
+                                           id="content-{{ index.id }}" 
+                                           class="content-index-checkbox mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                    <label for="content-{{ index.id }}" class="text-sm">
+                                        <span class="font-medium">{{ index.title }}</span>
+                                        <span class="text-xs text-gray-500">({{ index.type }})</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-sm text-gray-500">No indexed content available. 
+                                   <a href="{{ url_for('file_storage.manage_files') }}" class="text-blue-600 hover:underline hover:text-blue-800">
+                                      Add some in the File Management page.
+                                   </a>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <button id="refresh-indexes" class="mt-2 text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors duration-200">
+                            Refresh available indexes
+                        </button>
+                    </div>
                 </div>
-                <button id="refresh-indexes" class="text-xs text-blue-600 hover:underline mt-1">
-                    Refresh available indexes
-                </button>
+            </div>
+        
+            <!-- Main chat container (will resize when content panel opens) -->
+            <div class="flex-grow transition-all duration-300">
+                <!-- Chat Container -->
+                <div id="chat-container" class="border rounded-lg p-4 mb-4 h-60 overflow-y-auto bg-gray-50">
+                    <!-- Initial messages if any -->
+                    {% for message in messages %}
+                        <div class="mb-4 {% if message.role == 'user' %}flex justify-end{% endif %}">
+                            <div class="{% if message.role == 'user' %}order-1{% endif %} max-w-[80%] {% if message.role == 'user' %}w-auto{% else %}w-fit{% endif %}">
+                                <div class="font-bold {% if message.role == 'user' %}text-green-600 text-right{% else %}text-blue-600{% endif %} mb-1">
+                                    {{ 'You' if message.role == 'user' else 'AI Assistant' }}
+                                </div>
+                                <div class="{% if message.role == 'user' %}bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg{% else %}bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg{% endif %} p-3 text-gray-800 shadow-sm">
+                                    {% if message.role == 'user' %}
+                                        {{ message.content }}
+                                    {% else %}
+                                        <div id="md-content-{{ loop.index }}">{{ message.content }}</div>
+                                        <script>
+                                            document.getElementById('md-content-{{ loop.index }}').innerHTML = marked.parse('{{ message.content|replace("'", "\\'") }}');
+                                        </script>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <form id="chat-form"
+                      hx-post="{{ url_for('chatbot.send_message') }}"
+                      hx-target="#ai-response-placeholder"
+                      hx-swap="outerHTML"
+                      hx-indicator="#send-loading"
+                      hx-disabled-elt="#send-button">
+                    <!-- Message input with send button underneath -->
+                    <div class="border rounded-lg overflow-hidden shadow-sm">
+                        <!-- Text area -->
+                        <div class="relative w-full">
+                            <textarea name="message" 
+                                      id="message-input"
+                                      class="w-full p-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-b"
+                                      rows="3" 
+                                      placeholder="Type your message here..."
+                                      required
+                                      hx-trigger="keyup changed delay:100ms"
+                                      hx-get="{{ url_for('chatbot.check_message_length') }}"
+                                      hx-target="#char-count"
+                                      hx-swap="innerHTML"></textarea>
+                            <div id="char-count" class="absolute bottom-2 right-2 text-sm text-gray-500">0/2000</div>
+                        </div>
+                        
+                        <!-- Button bar -->
+                        <div class="flex justify-between items-center px-3 py-2 bg-gray-50">
+                            <!-- Chatbot Mode Selector -->
+                            <div class="justify-start mr-2">
+                                <select id="chatbot-mode" name="chatbot_mode" class="text-sm text-gray-700 border border-gray-300 bg-white rounded-md py-1.5 pl-3 pr-7 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm">
+                                    <option value="standard">Standard Chat</option>
+                                    <option value="agents">All Agents</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Advanced Mode toggle moved here -->
+                            <div class="flex items-center">
+                                <label for="use-content" class="text-sm mr-2 text-gray-700">Advanced Mode</label>
+                                <div class="relative inline-block w-10 mr-4 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" id="use-content" class="sr-only peer">
+                                    <div class="block h-6 w-10 rounded-full bg-gray-300 peer-checked:bg-blue-500"></div>
+                                    <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all duration-300 transform peer-checked:translate-x-4"></div>
+                                </div>
+                                
+                                <div id="send-loading" class="loading-indicator mr-2" style="display: none;">
+                                    <div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
+                                </div>
+                                <button id="send-button" 
+                                        type="submit" 
+                                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden inputs for content selection -->
+                    <input type="hidden" name="use_content" id="use-content-input" value="false">
+                    <div id="content-ids-container"></div>
+                </form>
             </div>
         </div>
-
-        <!-- Agent Selection -->
-        <div class="mb-4 p-4 border rounded bg-gray-50">
-            <h3 class="text-lg font-semibold mb-2">Response Mode</h3>
-            <p class="text-sm text-gray-600 mb-2">Choose how to process your message:</p>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex items-center">
-                    <input type="radio" id="mode-llm" name="agent_type" value="llm" class="mr-2" checked>
-                    <label for="mode-llm" class="text-sm font-medium">Standard LLM</label>
-                </div>
-                <div class="flex items-center">
-                    <input type="radio" id="mode-agents" name="agent_type" value="agents" class="mr-2">
-                    <label for="mode-agents" class="text-sm font-medium">All Agents</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Chat Container -->
-        <div id="chat-container" class="border rounded p-4 mb-4 h-80 overflow-y-auto">
-            <!-- Initial messages if any -->
-            {% for message in messages %}
-                <div class="mb-4">
-                    <div class="font-bold {% if message.role == 'user' %}text-green-600{% else %}text-blue-600{% endif %}">
-                        {{ 'You' if message.role == 'user' else 'AI Assistant' }}
-                    </div>
-                    <div class="{% if message.role == 'user' %}bg-green-100{% else %}bg-blue-100{% endif %} rounded-lg p-3 text-gray-800">
-                        {{ message.content }}
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <form id="chat-form" class="space-y-4"
-              hx-post="{{ url_for('chatbot.send_message') }}"
-              hx-target="#chat-container"
-              hx-swap="beforeend scroll:bottom"
-              hx-indicator="#send-loading"
-              hx-disabled-elt="#send-button">
-            
-            <!-- Message input with real-time character count -->
-            <div class="relative">
-                <textarea name="message" 
-                          id="message-input"
-                          class="w-full p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
-                          rows="3" 
-                          placeholder="Type your message here..."
-                          required
-                          hx-trigger="keyup changed delay:100ms"
-                          hx-get="{{ url_for('chatbot.check_message_length') }}"
-                          hx-target="#char-count"
-                          hx-swap="innerHTML"></textarea>
-                <div id="char-count" class="absolute bottom-2 right-2 text-sm text-gray-500">0/2000</div>
-            </div>
-
-            <!-- Hidden inputs for content selection -->
-            <input type="hidden" name="use_content" id="use-content-input" value="false">
-            <div id="content-ids-container"></div>
-
-            <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <div id="send-loading" class="loading-indicator">
-                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    </div>
-                    <button id="send-button" 
-                            type="submit" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                        Send Message
-                    </button>
-                </div>
-            </div>
-        </form>
 
         <!-- Error toast -->
         <div id="error-toast" 
-             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none">
+             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 101.414 1.414L10 11.414l1.293 1.293a1 1 001.414-1.414L11.414 10l1.293-1.293a1 1 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                     </svg>
                 </div>
                 <div class="ml-3">
@@ -131,10 +190,13 @@
     </div>
     
     <div class="mt-6">
-        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
             Back to Home
         </a>
     </div>
+
+    <!-- Add marked.js for markdown support -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -145,11 +207,252 @@
             const chatContainer = document.getElementById('chat-container');
             const messageInput = document.getElementById('message-input');
             const contentIdsContainer = document.getElementById('content-ids-container');
+            const chatbotModeSelect = document.getElementById('chatbot-mode');
+            const chatForm = document.getElementById('chat-form');
+            const sendLoading = document.getElementById('send-loading');
             
-            // Toggle content options visibility
+            // Advanced settings elements
+            const creativitySlider = document.getElementById('creativity');
+            const creativityValueInput = document.getElementById('creativity-value');
+            const maxTokenInput = document.getElementById('maxToken');
+            const modulesSelect = document.getElementById('modules');
+            const useRagCheckbox = document.getElementById('useRag');
+            const contentSelectionContainer = document.getElementById('content-selection-container');
+            
+            // Configure marked for rendering
+            marked.setOptions({
+                "async": false,
+                "breaks": false,
+                "extensions": null,
+                "gfm": true,
+                "hooks": null,
+                "pedantic": false,
+                "silent": false,
+                "tokenizer": null,
+                "walkTokens": null
+               });
+            
+            // Update creativity value when slider changes
+            creativitySlider.addEventListener('input', function() {
+                creativityValueInput.value = this.value;
+            });
+            
+            // Add a manual form submission handler to clear the textarea and include advanced params
+            chatForm.addEventListener('submit', function(event) {
+                // Prevent the default form submission - we'll handle it manually
+                event.preventDefault();
+                
+                // Get the message value
+                const messageValue = messageInput.value.trim();
+                
+                // Don't proceed if empty
+                if (!messageValue) {
+                    return false;
+                }
+                
+                // Show the loading indicator immediately
+                sendLoading.style.display = 'block';
+                
+                // Add the user message to chat immediately
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.className = 'mb-4 flex justify-end';
+                userMessageDiv.innerHTML = `
+                    <div class="order-1 max-w-[80%] w-auto">
+                        <div class="font-bold text-green-600 text-right mb-1">
+                            You
+                        </div>
+                        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-sm">
+                            ${escapeHtml(messageValue)}
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(userMessageDiv);
+                
+                // Immediately after, add an AI message with loading spinner
+                const aiResponseId = 'ai-response-placeholder-' + Date.now(); // Generate unique ID
+                const aiLoadingDiv = document.createElement('div');
+                aiLoadingDiv.className = 'mb-4';
+                aiLoadingDiv.id = aiResponseId;
+                aiLoadingDiv.innerHTML = `
+                    <div class="max-w-[80%] w-fit">
+                        <div class="font-bold text-blue-600 mb-1">
+                            AI Assistant
+                        </div>
+                        <div class="bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-sm">
+                            <div class="flex items-center space-x-2">
+                                <div class="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-600"></div>
+                                <span>Thinking...</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                chatContainer.appendChild(aiLoadingDiv);
+                
+                // Scroll to the bottom of the chat container
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                
+                // Add advanced settings parameters to form data if advanced mode is on
+                const formData = new FormData(chatForm);
+                formData.append('response_element_id', aiResponseId); // Add the unique ID to the form data
+                
+                if (useContent.checked) {
+                    // Add advanced settings to form data
+                    formData.set('creativity', document.getElementById('creativity-value').value);
+                    formData.set('maxToken', document.getElementById('maxToken').value);
+                    formData.set('modules', document.getElementById('modules').value);
+                    formData.set('useRag', document.getElementById('useRag').checked);
+                      // Add selected content IDs as listOfIndexes
+                    document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
+                        formData.append('listOfIndexes[]', checkbox.value);
+                    });
+                }
+                
+                // Send the message via fetch API
+                fetch(chatForm.getAttribute('hx-post'), {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.text();
+                })
+                .then(html => {
+                    // Replace the placeholder with the actual response
+                    const aiResponsePlaceholder = document.getElementById(aiResponseId);
+                    if (aiResponsePlaceholder) {
+                        aiResponsePlaceholder.outerHTML = html;
+                        
+                        // Process markdown in the new response
+                        const lastMessage = chatContainer.lastElementChild;
+                        if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
+                            const messageContent = lastMessage.querySelector('.bg-blue-100');
+                            if (messageContent) {
+                                // Apply markdown parsing
+                                // If no div is present, parse the content directly
+                                const textContent = messageContent.textContent;
+                                messageContent.innerHTML = marked.parse(textContent);
+                                messageContent.classList.add('markdown-content');
+                            }
+                        }
+                        
+                        // Scroll to bottom after content is rendered
+                        chatContainer.scrollTop = chatContainer.scrollHeight;
+                    }
+                    
+                    // Hide loading indicator
+                    sendLoading.style.display = 'none';
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Hide loading indicator
+                    sendLoading.style.display = 'none';
+                    // Show error message
+                    showError('Error sending message. Please try again.');
+                    // Remove the loading placeholder
+                    const aiResponsePlaceholder = document.getElementById(aiResponseId);
+                    if (aiResponsePlaceholder) {
+                        aiResponsePlaceholder.remove();
+                    }
+                });
+                
+                // Clear the text area
+                messageInput.value = '';
+                document.getElementById('char-count').innerHTML = '0/2000';
+            });
+            
+            // Helper function to escape HTML
+            function escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+            
+            // Also keep the HTMX event handler to show the loading indicator
+            chatForm.addEventListener('htmx:beforeRequest', function(event) {
+                // Only show the loading indicator for actual message submissions
+                // not for character counting requests
+                if (!event.detail.path.includes('check-message-length')) {
+                    // Make sure loading indicator is visible
+                    sendLoading.style.display = 'block';
+                }
+            });
+            
+            // Hide loading indicator when response is received or on error
+            document.body.addEventListener('htmx:afterSwap', function(event) {
+                if (event.detail.target.id === 'chat-container') {
+                    // Hide loading indicator
+                    sendLoading.style.display = 'none';
+                    
+                    // Process markdown in new AI responses
+                    const lastMessage = event.detail.target.lastElementChild;
+                    if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
+                        const messageContent = lastMessage.querySelector('.bg-blue-100');
+                        if (messageContent) {
+                            const text = messageContent.textContent;
+                            messageContent.innerHTML = marked.parse(text);
+                            messageContent.classList.add('markdown-content');
+                        }
+                    }
+                }
+            });
+            
+            // Also handle errors
+            document.body.addEventListener('htmx:responseError', function(event) {
+                sendLoading.style.display = 'none';
+            });
+            
+            // Update form target when chatbot mode changes
+            chatbotModeSelect.addEventListener('change', function() {
+                const mode = this.value;
+                let targetUrl = '';
+
+                console.log('Selected mode:', mode);
+                
+                switch(mode) {
+                    case 'standard':
+                        targetUrl = '{{ url_for("chatbot.get_query_response") }}';
+                        break;
+                    case 'agents':
+                        targetUrl = '{{ url_for("chatbot.get_agent_response") }}';
+                        break;
+                    default:
+                        targetUrl = '{{ url_for("chatbot.chatbot_page") }}';
+                }
+                
+                chatForm.setAttribute('hx-post', targetUrl);
+            });
+            
+            // Toggle advanced options visibility (renamed from content options)
             useContent.addEventListener('change', function() {
-                contentOptions.classList.toggle('hidden', !this.checked);
+                if (this.checked) {
+                    // Show the advanced settings panel
+                    contentOptions.style.width = '300px';
+                    contentOptions.style.height = 'auto';
+                    document.querySelector('.flex-grow').style.maxWidth = 'calc(100% - 320px)';
+                } else {
+                    // Hide the advanced settings panel
+                    contentOptions.style.width = '0';
+                    contentOptions.style.height = '0';
+                    document.querySelector('.flex-grow').style.maxWidth = '100%';
+                }
                 useContentInput.value = this.checked;
+            });
+            
+            // Toggle content selection visibility based on Use RAG toggle
+            useRagCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    contentSelectionContainer.classList.remove('hidden');
+                } else {
+                    contentSelectionContainer.classList.add('hidden');
+                }
             });
             
             // Refresh available indexes
@@ -209,13 +512,27 @@
                 }
             });
             
-            // Update hidden inputs for selected content IDs
+            // Process markdown in new AI responses (for HTMX responses)
+            document.body.addEventListener('htmx:afterSwap', function(event) {
+                if (event.detail.target.id === 'chat-container') {
+                    const lastMessage = event.detail.target.lastElementChild;
+                    if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
+                        const messageContent = lastMessage.querySelector('.bg-blue-100');
+                        if (messageContent) {
+                            const text = messageContent.textContent;
+                            messageContent.innerHTML = marked.parse(text);
+                            messageContent.classList.add('markdown-content');
+                        }
+                    }
+                }
+            });
+              // Update hidden inputs for selected content IDs
             function updateContentIds() {
                 contentIdsContainer.innerHTML = '';
                 document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
                     const input = document.createElement('input');
                     input.type = 'hidden';
-                    input.name = 'content_ids[]';
+                    input.name = 'listOfIndexes[]';
                     input.value = checkbox.value;
                     contentIdsContainer.appendChild(input);
                 });
@@ -259,4 +576,119 @@
             messageInput.focus();
         });
     </script>
+    
+    <style>
+        /* Style for the markdown wrapper */
+        .markdown-wrapper {
+            background-color: rgba(225, 234, 243, 0.9);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin: -0.25rem;
+        }
+
+        /* Enhanced styles for markdown content */
+        .markdown-content h1, 
+        .markdown-content h2, 
+        .markdown-content h3, 
+        .markdown-content h4, 
+        .markdown-content h5, 
+        .markdown-content h6 {
+            font-weight: 600;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+        
+        .markdown-content h1 { font-size: 1.5rem; }
+        .markdown-content h2 { font-size: 1.3rem; }
+        .markdown-content h3 { font-size: 1.1rem; }
+        
+        .markdown-content p {
+            margin-bottom: 0.75rem;
+        }
+        
+        .markdown-content code {
+            background-color: rgba(237, 242, 247, 0.8);
+            padding: 0.15rem 0.3rem;
+            border-radius: 0.25rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9em;
+            color: #3182ce;
+            border: 1px solid rgba(203, 213, 224, 0.5);
+        }
+        
+        .markdown-content pre {
+            background-color: rgba(237, 242, 247, 0.8);
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            border: 1px solid rgba(203, 213, 224, 0.5);
+        }
+        
+        .markdown-content pre code {
+            background-color: transparent;
+            padding: 0;
+            border: none;
+            font-size: 0.9em;
+        }
+        
+        .markdown-content blockquote {
+            border-left: 4px solid #3182ce;
+            padding: 0.5rem 0 0.5rem 1rem;
+            margin: 0.75rem 0;
+            background-color: rgba(237, 242, 247, 0.5);
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+        
+        .markdown-content ul, .markdown-content ol {
+            margin: 0.75rem 0 0.75rem 1.5rem;
+        }
+        
+        .markdown-content ul li, .markdown-content ol li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .markdown-content a {
+            color: #3182ce;
+            text-decoration: none;
+            border-bottom: 1px solid #3182ce;
+            transition: all 0.2s;
+        }
+        
+        .markdown-content a:hover {
+            opacity: 0.8;
+        }
+        
+        .markdown-content hr {
+            margin: 1rem 0;
+            border: 0;
+            height: 1px;
+            background-color: rgba(203, 213, 224, 0.8);
+        }
+        
+        .markdown-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 0.75rem 0;
+            font-size: 0.9em;
+        }
+        
+        .markdown-content table th,
+        .markdown-content table td {
+            padding: 0.5rem;
+            border: 1px solid rgba(203, 213, 224, 0.8);
+        }
+        
+        .markdown-content table th {
+            background-color: rgba(237, 242, 247, 0.8);
+            font-weight: 600;
+        }
+        
+        .markdown-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.25rem;
+        }
+    </style>
 {% endblock %}

@@ -4,7 +4,7 @@ Review Agent for analyzing and providing feedback on content
 from flask import current_app
 import logging
 from typing import Dict, Any, List, Optional
-from services.llm.chat import get_llm_response
+from services.llm.llm_core import get_llm_response
 
 class Review:
     """
