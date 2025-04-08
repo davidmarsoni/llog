@@ -6,6 +6,7 @@ from services.llm_service import get_llm_response, get_available_indexes, get_st
 from services.llm.Agents.QueryResearch import QueryResearch
 from services.llm.Agents.Write import Write
 from services.llm.Agents.Review import Review
+from services.llm.MultiAgents import get_multi_agent_handler
 import httpx
 import json
 
@@ -58,7 +59,32 @@ def send_message():
         response_content = ""
         
         # Process based on selected response mode
-        if agent_type == 'agents':
+        if agent_type == 'multi':
+            # Use the advanced multi-agent system
+            current_app.logger.info("Using advanced multi-agent system")
+            
+            # Initialize the multi-agent handler
+            multi_agent = get_multi_agent_handler(current_app.logger)
+            
+            # Process the request through the multi-agent system
+            result = multi_agent.process_request(message)
+            
+            if result.get('status') == 'success':
+                # Get the analysis and result
+                analysis = result.get('analysis', {})
+                primary_intent = analysis.get('primary_intent', '')
+                
+                # Format the response with some context about what happened
+                task_count = len(analysis.get('tasks', []))
+                response_content = result.get('result', '')
+                
+                # Add a small footer with info about the multi-agent processing
+                response_content += f"\n\n---\n*Processed using Advanced Multi-Agent System ({task_count} tasks)*"
+            else:
+                response_content = f"Sorry, the multi-agent system encountered an error: {result.get('message', 'Unknown error')}"
+            
+        elif agent_type == 'agents':
+            # Use the original agent pipeline
             # Step 1: Research with QueryResearch agent
             research_agent = QueryResearch(current_app.logger)
             research_results = research_agent.research(message, content_ids if content_ids else None)

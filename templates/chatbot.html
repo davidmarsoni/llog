@@ -55,6 +55,21 @@
                     <label for="mode-agents" class="text-sm font-medium">All Agents</label>
                 </div>
             </div>
+            <div class="mb-4 flex items-center text-sm space-x-4 px-2">
+                <div class="font-medium">Agent Mode:</div>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="agent_type" value="llm" class="form-radio h-4 w-4 text-indigo-600" checked>
+                    <span class="ml-2">LLM Only</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="agent_type" value="agents" class="form-radio h-4 w-4 text-indigo-600">
+                    <span class="ml-2">All Agents</span>
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="radio" name="agent_type" value="multi" class="form-radio h-4 w-4 text-indigo-600">
+                    <span class="ml-2">Advanced Multi-Agent</span>
+                </label>
+            </div>
         </div>
 
         <!-- Chat Container -->
