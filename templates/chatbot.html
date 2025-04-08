@@ -41,6 +41,22 @@
             </div>
         </div>
 
+        <!-- Agent Selection -->
+        <div class="mb-4 p-4 border rounded bg-gray-50">
+            <h3 class="text-lg font-semibold mb-2">Response Mode</h3>
+            <p class="text-sm text-gray-600 mb-2">Choose how to process your message:</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex items-center">
+                    <input type="radio" id="mode-llm" name="agent_type" value="llm" class="mr-2" checked>
+                    <label for="mode-llm" class="text-sm font-medium">Standard LLM</label>
+                </div>
+                <div class="flex items-center">
+                    <input type="radio" id="mode-agents" name="agent_type" value="agents" class="mr-2">
+                    <label for="mode-agents" class="text-sm font-medium">All Agents</label>
+                </div>
+            </div>
+        </div>
+
         <!-- Chat Container -->
         <div id="chat-container" class="border rounded p-4 mb-4 h-80 overflow-y-auto">
             <!-- Initial messages if any -->
@@ -208,6 +224,21 @@
             // Add change listeners to existing checkboxes
             document.querySelectorAll('.content-index-checkbox').forEach(checkbox => {
                 checkbox.addEventListener('change', updateContentIds);
+            });
+            
+            // Create a hidden input for the selected agent type
+            const agentTypeInput = document.createElement('input');
+            agentTypeInput.type = 'hidden';
+            agentTypeInput.name = 'agent_type';
+            agentTypeInput.value = 'llm'; // Default value
+            document.querySelector('#chat-form').appendChild(agentTypeInput);
+            
+            // Update agent type when radio buttons are clicked
+            document.querySelectorAll('input[name="agent_type"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    agentTypeInput.value = this.value;
+                    console.log('Agent type changed to:', this.value);
+                });
             });
             
             // Show error message

@@ -1,5 +1,5 @@
 """
-Write Agent for generating structured written content
+Write Agent for generating structured content for questions, summaries, and quizzes
 """
 from flask import current_app
 import os
@@ -8,197 +8,109 @@ import logging
 import re
 from services.llm.chat import get_llm_response
 from services.llm.content import query_content
-from services.llm.Agents.agent_logger import log_agent_use
 
 class Write:
     """
-    Write agent that generates high-quality structured text content based on user requirements.
-    Supports various formats and can incorporate research from existing content.
+    Write agent that generates content for specific use cases:
+    - Answering questions
+    - Creating concise summaries
+    - Generating interactive quizzes
     """
     
     def __init__(self, logger=None):
         """Initialize the write agent with optional custom logger"""
         self.logger = logger or current_app.logger
         self.formats = {
-            "article": self._format_article,
-            "blog": self._format_blog,
-            "report": self._format_report,
+            "answer": self._format_answer,
             "summary": self._format_summary,
-            "outline": self._format_outline,
-            "email": self._format_email
+            "quiz": self._format_quiz
         }
     
-    def _format_article(self, content: Dict[str, Any]) -> Dict[str, Any]:
-        """Format content as a structured article"""
-        structured = {
-            "type": "article",
-            "title": content.get("title", "Untitled Article"),
-            "sections": []
+    def _format_answer(self, content: Dict[str, Any]) -> Dict[str, Any]:
+        """Format content as a direct answer to a question"""
+        return {
+            "type": "answer",
+            "question": content.get("title", ""),
+            "answer": content.get("content", ""),
+            "sources": content.get("sources", [])
         }
-        
-        # Process the main content
-        main_content = content.get("content", "")
-        
-        # Extract sections based on headings
-        sections = re.split(r'(?m)^#{1,3} ', main_content)
-        
-        # Process each section (skip empty first split if it exists)
-        for section in (sections[1:] if sections[0].strip() == "" else sections):
-            if not section.strip():
-                continue
-                
-            # Extract heading and content
-            section_parts = section.strip().split('\n', 1)
-            heading = section_parts[0].strip()
-            body = section_parts[1].strip() if len(section_parts) > 1 else ""
-            
-            structured["sections"].append({
-                "heading": heading,
-                "content": body
-            })
-            
-        return structured
-    
-    def _format_blog(self, content: Dict[str, Any]) -> Dict[str, Any]:
-        """Format content as a blog post"""
-        # Similar to article but with blog-specific formatting
-        article_format = self._format_article(content)
-        
-        # Convert to blog format
-        blog_format = {
-            "type": "blog",
-            "title": article_format.get("title", "Untitled Blog Post"),
-            "intro": "",
-            "sections": article_format.get("sections", []),
-            "conclusion": "",
-            "tags": content.get("tags", [])
-        }
-        
-        # Extract intro and conclusion if they exist
-        if blog_format["sections"]:
-            first_section = blog_format["sections"][0]
-            if first_section["heading"].lower() in ["introduction", "intro"]:
-                blog_format["intro"] = first_section["content"]
-                blog_format["sections"] = blog_format["sections"][1:]
-                
-            last_section = blog_format["sections"][-1]
-            if last_section["heading"].lower() in ["conclusion", "summary", "final thoughts"]:
-                blog_format["conclusion"] = last_section["content"]
-                blog_format["sections"] = blog_format["sections"][:-1]
-        
-        return blog_format
-    
-    def _format_report(self, content: Dict[str, Any]) -> Dict[str, Any]:
-        """Format content as a formal report"""
-        report = {
-            "type": "report",
-            "title": content.get("title", "Untitled Report"),
-            "executive_summary": "",
-            "sections": [],
-            "recommendations": [],
-            "appendices": []
-        }
-        
-        # Process the main content
-        main_content = content.get("content", "")
-        
-        # Extract sections based on headings
-        sections = re.split(r'(?m)^#{1,3} ', main_content)
-        
-        # Process each section
-        for section in (sections[1:] if sections[0].strip() == "" else sections):
-            if not section.strip():
-                continue
-                
-            # Extract heading and content
-            section_parts = section.strip().split('\n', 1)
-            heading = section_parts[0].strip()
-            body = section_parts[1].strip() if len(section_parts) > 1 else ""
-            
-            # Categorize section based on heading
-            heading_lower = heading.lower()
-            if "executive summary" in heading_lower or "abstract" in heading_lower:
-                report["executive_summary"] = body
-            elif "recommendation" in heading_lower:
-                # Extract bullet points as recommendations
-                bullets = re.findall(r'(?m)^[\*\-\•]\s*(.+)$', body)
-                report["recommendations"].extend(bullets if bullets else [body])
-            elif "appendix" in heading_lower:
-                report["appendices"].append({
-                    "title": heading,
-                    "content": body
-                })
-            else:
-                report["sections"].append({
-                    "heading": heading,
-                    "content": body
-                })
-        
-        return report
     
     def _format_summary(self, content: Dict[str, Any]) -> Dict[str, Any]:
         """Format content as a concise summary"""
+        # Extract key points from the content if present
+        key_points = []
+        content_text = content.get("content", "")
+        
+        # Look for bullet points or numbered lists
+        matches = re.findall(r'(?m)^[\*\-\d\.\•]\s+(.+)$', content_text)
+        if matches:
+            key_points = matches
+        
         return {
             "type": "summary",
             "title": content.get("title", "Summary"),
-            "content": content.get("content", ""),
-            "key_points": content.get("key_points", [])
+            "content": content_text,
+            "key_points": key_points
         }
     
-    def _format_outline(self, content: Dict[str, Any]) -> Dict[str, Any]:
-        """Format content as an outline with hierarchical structure"""
-        outline = {
-            "type": "outline",
-            "title": content.get("title", "Outline"),
-            "sections": []
+    def _format_quiz(self, content: Dict[str, Any]) -> Dict[str, Any]:
+        """Format content as an interactive quiz"""
+        quiz = {
+            "type": "quiz",
+            "title": content.get("title", "Quiz"),
+            "description": "",
+            "questions": []
         }
         
-        # Process the main content
-        main_content = content.get("content", "")
+        # Process the content to extract questions
+        content_text = content.get("content", "")
         
-        # Split by lines and process hierarchical structure
-        lines = main_content.strip().split("\n")
-        current_path = []
+        # Extract description (first paragraph)
+        desc_match = re.search(r'^(.*?)(?=\n\s*\n|\n\s*#)', content_text, re.DOTALL)
+        if desc_match:
+            quiz["description"] = desc_match.group(1).strip()
         
-        for line in lines:
-            if not line.strip():
-                continue
+        # Look for questions in the format "Q1: Question text"
+        # and answers in the format "A: Answer text" or "Option A: Text"
+        question_blocks = re.split(r'(?m)^(?:Q|Question|#)[\s\d\.:]+', content_text)
+        
+        for block in question_blocks[1:]:  # Skip the first split which is usually intro text
+            question_match = re.search(r'^(.*?)(?=\n\s*(?:A|Option|Answer|Correct|Explanation)|\Z)', block, re.DOTALL)
+            if question_match:
+                question_text = question_match.group(1).strip()
                 
-            # Calculate indentation level
-            indent = len(line) - len(line.lstrip())
-            level = indent // 2  # Assuming 2 spaces per level
-            
-            # Adjust current path based on indentation
-            if level >= len(current_path):
-                # Going deeper
-                current_path.append({"title": line.strip(), "items": []})
-            else:
-                # Coming back to a higher level
-                current_path = current_path[:level]
-                current_path.append({"title": line.strip(), "items": []})
-            
-            # Update the outline structure
-            if level == 0:
-                outline["sections"].append(current_path[-1])
-            else:
-                current_path[level-1]["items"].append(current_path[level])
+                # Look for options/answers
+                options = []
+                correct_answer = None
+                explanation = ""
+                
+                # Find options (A, B, C, D) or (1, 2, 3, 4)
+                option_matches = re.findall(r'(?m)^(?:Option\s+)?([A-D\d])[\s\.:]+(.+)$', block)
+                for opt_letter, opt_text in option_matches:
+                    options.append({"letter": opt_letter, "text": opt_text.strip()})
+                
+                # Find correct answer and explanation
+                correct_match = re.search(r'(?:Correct|Answer)[^\n]*?[:\s]\s*([A-D\d])', block)
+                if correct_match:
+                    correct_answer = correct_match.group(1)
+                
+                explanation_match = re.search(r'(?:Explanation|Reason)[^\n]*?[:\s]\s*(.+?)(?=\n\s*$|\Z)', block, re.DOTALL)
+                if explanation_match:
+                    explanation = explanation_match.group(1).strip()
+                
+                # Add question to quiz
+                quiz["questions"].append({
+                    "question": question_text,
+                    "options": options,
+                    "correct_answer": correct_answer,
+                    "explanation": explanation
+                })
         
-        return outline
-    
-    def _format_email(self, content: Dict[str, Any]) -> Dict[str, Any]:
-        """Format content as an email with standard email components"""
-        return {
-            "type": "email",
-            "subject": content.get("title", ""),
-            "greeting": content.get("greeting", ""),
-            "body": content.get("content", ""),
-            "closing": content.get("closing", "Regards,"),
-            "signature": content.get("signature", "")
-        }
+        return quiz
     
     def _prepare_prompt(self, request: Dict[str, Any]) -> str:
         """
-        Prepare a detailed prompt for the LLM based on the writing request
+        Prepare a prompt for the LLM based on the writing request
         
         Args:
             request (Dict[str, Any]): The writing request parameters
@@ -206,37 +118,64 @@ class Write:
         Returns:
             str: Formatted prompt for the LLM
         """
-        content_type = request.get("type", "article").lower()
+        content_type = request.get("type", "answer").lower()
         topic = request.get("topic", "")
         keywords = request.get("keywords", [])
-        tone = request.get("tone", "informative")
-        audience = request.get("audience", "general")
         length = request.get("length", "medium")
-        instructions = request.get("instructions", "")
         
         # Map length to word count expectations
         length_map = {
-            "short": "300-500 words",
-            "medium": "800-1200 words",
-            "long": "1500-2500 words",
-            "very long": "3000+ words"
+            "very short": "50-100 words",
+            "short": "100-200 words",
+            "medium": "200-400 words",
+            "long": "500-800 words"
         }
-        word_count = length_map.get(length.lower(), "800-1200 words")
+        word_count = length_map.get(length.lower(), "200-400 words")
         
-        # Build the prompt
-        prompt = f"""Generate a {content_type} about '{topic}'. 
+        # Customize prompt based on content type
+        if content_type == "answer":
+            prompt = f"""Answer the following question concisely: "{topic}"
 
 Details:
-- Target length: {word_count}
-- Target audience: {audience}
-- Tone: {tone}
-- Keywords to include: {', '.join(keywords) if keywords else 'No specific keywords required'}
+- Keep it brief: {word_count}
+- Focus on accuracy and clarity
+- Use factual information
+- Keywords to include: {', '.join(keywords) if keywords else 'None specified'}
 
-Structure the {content_type} with appropriate headings and sections. Use markdown formatting.
+Your answer should be direct and informative."""
 
-{instructions}
+        elif content_type == "summary":
+            prompt = f"""Create a concise summary of '{topic}'.
 
-Generate the complete {content_type} with a compelling title."""
+Details:
+- Keep it brief: {word_count}
+- Focus on key points only
+- Avoid unnecessary details
+- Keywords to include: {', '.join(keywords) if keywords else 'None specified'}
+
+Format your summary with bullet points for key takeaways."""
+
+        elif content_type == "quiz":
+            prompt = f"""Create an interactive quiz about '{topic}'.
+
+Generate {3 if length == 'short' else (5 if length == 'medium' else 8)} multiple-choice questions.
+
+For each question:
+1. Write a clear question
+2. Provide 4 options (label them A, B, C, D)
+3. Indicate the correct answer
+4. Include a brief explanation for the correct answer
+
+Format each question as:
+Question 1: [Question text]
+Option A: [Option text]
+Option B: [Option text]
+Option C: [Option text]
+Option D: [Option text]
+Correct Answer: [Letter]
+Explanation: [Brief explanation]
+
+Start with a brief introduction to the quiz topic."""
 
         return prompt
     
@@ -245,28 +184,10 @@ Generate the complete {content_type} with a compelling title."""
               use_research: bool = False, 
               research_query: Optional[str] = None,
               index_ids: Optional[List[str]] = None) -> Dict[str, Any]:
-        """
-        Generate written content based on the request parameters
-        
-        Args:
-            request (Dict[str, Any]): Content request parameters including:
-                - type: Content type (article, blog, report, etc.)
-                - topic: Main topic to write about
-                - keywords: List of keywords to include
-                - tone: Desired tone (formal, casual, etc.)
-                - audience: Target audience
-                - length: Desired length (short, medium, long)
-                - instructions: Additional writing instructions
-            use_research (bool): Whether to incorporate research from content indexes
-            research_query (str, optional): Custom query for research, defaults to topic
-            index_ids (List[str], optional): Specific index IDs to search
-            
-        Returns:
-            Dict[str, Any]: Generated content in structured format
-        """
+        print("\n======= Write AGENT START =======")
+        print(f"Input request (first 100 chars): {str(request)[:100]}")
         try:
             self.logger.info(f"Starting write request for {request.get('type', 'content')} on {request.get('topic', 'unspecified topic')}")
-            log_agent_use("Write", f"Generating {request.get('type', 'content')} about '{request.get('topic', 'unspecified topic')}'")
             
             # Get research context if requested
             context = None
@@ -297,7 +218,7 @@ Generate the complete {content_type} with a compelling title."""
             
             # Add research context if available
             if context:
-                prompt += f"\n\nUse the following research to inform your writing:\n{context}"
+                prompt += f"\n\nUse the following research to inform your response:\n{context}"
             
             # Get response from LLM
             self.logger.info("Generating content with LLM")
@@ -310,11 +231,11 @@ Generate the complete {content_type} with a compelling title."""
                 raise ValueError(f"Error from LLM service: {response['error']}")
                 
             content_text = response.get("answer", "")
-            content_type = request.get("type", "article").lower()
+            content_type = request.get("type", "answer").lower()
             
-            # Extract title from markdown content
+            # Extract title if present
             title_match = re.search(r'^#\s+(.+)$', content_text, re.MULTILINE)
-            title = title_match.group(1) if title_match else request.get("topic", "Untitled")
+            title = title_match.group(1) if title_match else request.get("topic", "")
             
             # Create base content object
             content = {
@@ -323,23 +244,19 @@ Generate the complete {content_type} with a compelling title."""
                 "raw_text": content_text
             }
             
-            # Add any specific request parameters
-            for key in ["tone", "audience", "keywords"]:
-                if key in request:
-                    content[key] = request[key]
-            
             # Format the content based on type
             if content_type in self.formats:
                 formatted_content = self.formats[content_type](content)
             else:
-                # Default to article format
-                formatted_content = self._format_article(content)
+                # Default to answer format
+                formatted_content = self._format_answer(content)
                 
             # Add raw text for debugging/storage
             formatted_content["raw_text"] = content_text
             
             self.logger.info(f"Write operation complete: Generated {content_type} '{title}'")
-            log_agent_use("Write", f"Writing complete: Generated {content_type} '{title}'")
+            print(f"Generated content (first 150 chars): {str(formatted_content)[:150]}")
+            print("======= Write AGENT COMPLETE =======\n")
             return {
                 "status": "success",
                 "content": formatted_content

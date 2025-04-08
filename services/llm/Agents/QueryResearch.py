@@ -9,7 +9,6 @@ from collections import Counter
 import re
 from services.llm.content import query_content, get_content_metadata
 from services.llm.cache import get_available_indexes
-from services.llm.Agents.agent_logger import log_agent_use
 
 class QueryResearch:
     """
@@ -22,6 +21,7 @@ class QueryResearch:
     def __init__(self, logger=None):
         """Initialize the research agent with optional custom logger"""
         self.logger = logger or current_app.logger
+        print("QueryResearch Agent has been initialized.")
     
     # Extract key themes from text content -> compare to metadata and other sources, 
     # pick out the most relevant index IDs and themes
@@ -187,9 +187,10 @@ class QueryResearch:
         Returns:
             Dict[str, Any]: Research results including themes, keywords, and processed sources
         """
+        print("\n======= QueryResearch AGENT START =======")
+        print(f"Input query (first 100 chars): {query[:100]}")
         try:
             self.logger.info(f"Starting research query: {query}")
-            log_agent_use("Research", f"Researching query: '{query}'")
             
             # If no indexes specified, use all available
             if not index_ids:
@@ -236,7 +237,8 @@ class QueryResearch:
             }
             
             self.logger.info(f"Research complete. Found {len(sources)} sources, {len(themes)} themes, {len(keywords)} keywords")
-            log_agent_use("Research", f"Research complete. Found {len(sources)} sources, {len(themes)} themes")
+            print(f"Extracted themes (first 150 chars): {str(themes)[:150]}")
+            print("======= QueryResearch AGENT COMPLETE =======\n")
             return research_result
             
         except Exception as e:

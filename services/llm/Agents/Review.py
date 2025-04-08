@@ -5,7 +5,6 @@ from flask import current_app
 import logging
 from typing import Dict, Any, List, Optional
 from services.llm.chat import get_llm_response
-from services.llm.Agents.agent_logger import log_agent_use
 
 class Review:
     """
@@ -304,64 +303,66 @@ class Review:
         Returns:
             str: Formatted prompt for the LLM
         """
-        base_prompt = f"""Review the following content and provide detailed feedback.
+        # Limit content length for review to ensure faster, more focused feedback
+        max_review_chars = 4000
+        if len(content) > max_review_chars:
+            truncated_content = content[:max_review_chars] + "...[truncated for length]"
+        else:
+            truncated_content = content
+            
+        base_prompt = f"""Review the following content and provide concise, actionable feedback.
         
 Content to review:
 '''
-{content}
+{truncated_content}
 '''
         """
         
         if review_type == "writing":
             prompt = base_prompt + """
-Focus on writing quality assessment. Analyze:
-1. Writing style and tone consistency
-2. Grammar and spelling
-3. Structure and organization
-4. Clarity and readability
-5. Engagement and flow
+Focus on providing practical writing feedback:
+1. Identify what works well
+2. Note 2-3 specific areas for improvement
+3. Evaluate readability and engagement
 
 Return your analysis as JSON with these fields:
-- summary: Overall assessment (1-2 sentences)
-- strengths: List of 3-5 writing strengths
-- weaknesses: List of 3-5 writing weaknesses
-- improvement_suggestions: List of 3-5 specific suggestions to improve the writing
-- grammar_issues: List of specific grammar or spelling issues found
+- summary: Brief overall assessment (1-2 sentences)
+- strengths: List of 2-3 key strengths
+- weaknesses: List of 2-3 key areas for improvement
+- improvement_suggestions: List of 2-3 specific, actionable suggestions
+- grammar_issues: List of major grammar or clarity issues (if any)
 """
 
         elif review_type == "fact_check":
             prompt = base_prompt + """
-Focus on factual accuracy. Analyze:
-1. Identify factual claims and assertions
-2. Note any questionable statements that need verification
-3. Identify any statements that appear incorrect
-4. Note where important context may be missing
+Focus on accuracy and reliability. Analyze:
+1. Identify any questionable claims or statements
+2. Note any missing context or nuance
+3. Highlight areas of strong factual support
 
 Return your analysis as JSON with these fields:
-- summary: Overall assessment of factual accuracy (1-2 sentences)
-- accurate_statements: List of key factual statements that appear accurate
-- questionable_statements: List of statements that require verification
-- incorrect_statements: List of statements that appear incorrect
-- missing_context: List of areas where important context is missing
-- verification_suggestions: List of specific sources or methods to verify questionable information
+- summary: Brief assessment of factual reliability (1-2 sentences)
+- accurate_statements: List of well-supported claims (max 3)
+- questionable_statements: List of statements requiring verification (if any)
+- incorrect_statements: List of likely inaccurate claims (if any)
+- missing_context: Key information that would improve accuracy (if applicable)
+- verification_suggestions: Specific ways to verify questionable information
 """
 
         elif review_type == "seo":
             prompt = base_prompt + """
-Focus on SEO optimization. Analyze:
-1. Keyword usage and density
-2. Content structure and formatting for SEO
-3. Meta description and title opportunities
-4. Content completeness for search intent
-5. Internal and external linking opportunities
+Focus on practical SEO improvements:
+1. Identify strongest keywords and search potential
+2. Note 2-3 specific SEO improvements with high impact
+3. Suggest title and structure optimizations
 
 Return your analysis as JSON with these fields:
-- summary: Overall SEO assessment (1-2 sentences)
-- keyword_analysis: Object with suggested primary and secondary keywords and their usage analysis
-- content_suggestions: List of 3-5 specific content improvements for SEO
-- structure_suggestions: List of 2-3 structural changes to improve SEO
-- meta_suggestions: List of title and meta description suggestions
-- seo_score: Numerical score from 1-10 rating SEO optimization
+- summary: Brief SEO assessment (1-2 sentences)
+- keyword_analysis: Object with 2-3 primary keywords and brief usage analysis
+- content_suggestions: List of 2-3 specific content improvements for SEO
+- structure_suggestions: List of 1-2 structural changes to improve search visibility
+- meta_suggestions: Brief title and meta description improvement (if needed)
+- seo_score: Numerical score from 1-10 rating current SEO optimization
 """
 
         # Add any custom criteria to the prompt
@@ -370,6 +371,9 @@ Return your analysis as JSON with these fields:
             for key, value in criteria.items():
                 criteria_str += f"- {key}: {value}\n"
             prompt += criteria_str
+            
+        # Add instruction for conciseness
+        prompt += "\nImportant: Keep your feedback concise, practical and actionable. Focus on the most important points rather than exhaustive analysis."
         
         return prompt
     
@@ -398,8 +402,7 @@ Return your analysis as JSON with these fields:
             self.logger.info(f"Requesting {review_type} review from LLM")
             response = get_llm_response(
                 query=prompt,
-                use_context=False,
-                response_format="json"
+                use_context=False
             )
             
             if "error" in response:
@@ -414,11 +417,25 @@ Return your analysis as JSON with these fields:
                 if isinstance(result, str):
                     # If the result is a string, it might be JSON in string form or plain text
                     try:
+                        # Look for JSON content in the response
+                        import re
                         import json
-                        parsed_result = json.loads(result)
-                        return parsed_result
-                    except json.JSONDecodeError:
-                        # If parsing fails, wrap the text in a basic structure
+                        # Try to find JSON content within the string (between { and })
+                        json_match = re.search(r'(\{.*\})', result, re.DOTALL)
+                        if json_match:
+                            json_str = json_match.group(1)
+                            parsed_result = json.loads(json_str)
+                            return parsed_result
+                        else:
+                            # If no JSON format found, try to parse the whole string
+                            try:
+                                parsed_result = json.loads(result)
+                                return parsed_result
+                            except json.JSONDecodeError:
+                                # If parsing fails, wrap the text in a basic structure
+                                return {"summary": result}
+                    except Exception as e:
+                        self.logger.warning(f"Error parsing JSON from LLM response: {str(e)}")
                         return {"summary": result}
                 else:
                     # Result is already parsed JSON
@@ -446,14 +463,14 @@ Return your analysis as JSON with these fields:
             Dict[str, Any]: Review results in structured format
         """
         try:
+            print("\n======= Review AGENT START =======")
+            print(f"Input content (first 100 chars): {content[:100]}")
             self.logger.info(f"Starting {review_type} review")
-            log_agent_use("Review", f"Performing {review_type} review")
             
             # First validate the content
             validation = self._validate_content(content)
             if not validation["valid"]:
                 self.logger.warning(f"Content validation failed: {validation['message']}")
-                log_agent_use("Review", f"Review failed: {validation['message']}")
                 return {
                     "status": "error",
                     "message": validation["message"]
@@ -468,8 +485,9 @@ Return your analysis as JSON with these fields:
             review_method = self.review_types[review_type]
             result = review_method(content, criteria)
             
+            print(f"Final reviewed content (first 150 chars): {str(result)[:150]}")
+            print("======= Review AGENT COMPLETE =======\n")
             self.logger.info(f"Review completed: {review_type}")
-            log_agent_use("Review", f"Review completed: {review_type}")
             
             return {
                 "status": "success",
