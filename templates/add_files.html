@@ -4,7 +4,28 @@
 
 {% block content %}
 <div class="py-8">
-    <h1 class="text-4xl font-bold mb-6 text-gray-900">Add Content</h1>
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-4xl font-bold text-gray-900">Add Content</h1>
+        
+        <!-- Navigation Buttons (Moved to top) -->
+        <div class="flex gap-3">
+            <a href="{{ url_for('file_storage.view_files') }}" 
+               id="view-content-button"
+               class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+                View Cached Content
+            </a>
+            <a href="{{ url_for('main.home') }}" 
+               id="home-button"
+               class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+                Back to Home
+            </a>
+            <a href="{{ url_for('chatbot.chatbot_page') }}" 
+               id="chatbot-button"
+               class="inline-flex items-center justify-center rounded-md bg-blue-600 px-3 py-2 text-sm text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
+                Go to AI Assistant
+            </a>
+        </div>
+    </div>
     
     {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -33,55 +54,50 @@
                     </button>
                 </li>
             </ul>
-        </div>
-        
-        <!-- Notion Tab Content -->
-        <div id="notion-tab" class="tab-content bg-white p-6 rounded-lg border shadow-xs mt-2">
-            <div class="mb-4">
-                <h2 class="text-2xl font-bold text-gray-800">Cache Notion Content</h2>
-                <p class="text-gray-600 mt-1">
-                    Cache Notion pages or databases to create embeddings for faster LLM queries.
-                    This helps avoid slow Notion API calls during conversations with the AI.
-                </p>
+        </div>        <!-- Notion Tab Content -->
+        <div id="notion-tab" class="tab-content bg-white p-6 rounded-lg border shadow-xs mt-2">            <div class="mb-2 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">Cache Notion Content</h2>
+                    <p class="text-gray-600 mt-1">
+                        Cache Notion pages or databases to create embeddings for faster LLM queries.
+                        This helps avoid slow Notion API calls during conversations with the AI.
+                    </p>
+                </div>
+                
+                <!-- Input Mode Selection (Moved to top right) -->
+                <div class="inline-flex rounded-lg border bg-gray-50 p-1">
+                    <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
+                        <input type="radio" name="input_type" value="database" class="sr-only" {% if not request.form.get('page_id') %}checked{% endif %} 
+                               onclick="toggleInputMode('database')">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"/>
+                            <path d="M4 12h16"/>
+                            <path d="M12 4v16"/>
+                        </svg>
+                        <span>Database</span>
+                    </label>
+                    <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
+                        <input type="radio" name="input_type" value="page" class="sr-only" {% if request.form.get('page_id') %}checked{% endif %}
+                               onclick="toggleInputMode('page')">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span>Single Page</span>
+                    </label>
+                </div>
             </div>
-            
-            <form method="POST" 
+            <div class="mb-4"></div>            <form method="POST" 
                   action="{{ url_for('file_add.cache_notion_page') }}" 
                   id="notion-form">
-                <!-- Input Mode Selection -->
-                <div class="flex justify-center mb-6">
-                    <div class="inline-flex rounded-lg border bg-gray-50 p-1">
-                        <label id="database-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if not request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
-                            <input type="radio" name="input_type" value="database" class="sr-only" {% if not request.form.get('page_id') %}checked{% endif %} 
-                                   onclick="toggleInputMode('database')">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"/>
-                                <path d="M4 12h16"/>
-                                <path d="M12 4v16"/>
-                            </svg>
-                            <span>Database</span>
-                        </label>
-                        <label id="page-label" class="cursor-pointer px-4 py-2 rounded-md flex items-center gap-2 {% if request.form.get('page_id') %}bg-white shadow-xs{% endif %}">
-                            <input type="radio" name="input_type" value="page" class="sr-only" {% if request.form.get('page_id') %}checked{% endif %}
-                                   onclick="toggleInputMode('page')">
-                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-                                <polyline points="14 2 14 8 20 8"/>
-                            </svg>
-                            <span>Single Page</span>
-                        </label>
-                    </div>
-                </div>
                 
                 <div class="space-y-6"> 
                     <!-- Database Input Section -->
                     <div id="database-section" class="space-y-4 {% if request.form.get('page_id') %}hidden{% endif %}">
-                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Database Option</h3>
-                        <div>
+                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Database Option</h3>                        <div>
                             <label for="database_id" class="block text-gray-700 font-medium mb-1">
                                 Notion Database ID:
-                            </label>
-                            <input
+                            </label>                            <input
                                 type="text"
                                 id="database_id"
                                 name="database_id"
@@ -89,12 +105,46 @@
                                 value="{{ request.form.get('database_id', '') }}"
                                 class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
-                            <p class="text-sm text-gray-500 mt-1">
-                                Enter the Notion database ID to cache all its pages.
-                            </p>
-                            <p class="text-sm text-gray-500 mt-1">
-                                Find it in the database URL: notion.so/<span class="font-medium">dc89fddeb09148639940a75e7759b8bc</span>?v=...
-                            </p>
+                              <!-- Database ID Help Toggle Button (Moved below input) -->
+                            <div class="mt-2 {% if request.form.get('page_id') %}hidden{% endif %}" id="database-help-toggle-container">
+                                <button type="button" id="database-help-toggle" onclick="toggleHelpBox('database-help-box')" 
+                                        class="flex items-center justify-between w-full text-sm text-blue-600 font-medium hover:text-blue-800">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>Need help finding your Database ID?</span>
+                                    </div>
+                                    <div>
+                                        <svg id="database-chevron-down" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        <svg id="database-chevron-up" class="h-4 w-4 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                                
+                                <!-- Database ID Help Box (Initially Hidden) -->
+                                <div id="database-help-box" class="hidden mt-3 bg-blue-50 rounded-md p-3">
+                                    <div class="flex items-start">
+                                        <div>
+                                            <h3 class="text-sm font-medium text-blue-800">How to find your Notion Database ID</h3>
+                                            <div class="mt-2 text-sm text-blue-700">
+                                                <ol class="list-decimal ml-5 space-y-1">
+                                                    <li>Open your Notion database in the browser</li>
+                                                    <li>Look at the URL in your address bar</li>
+                                                    <li>Find the 32-character ID in the URL:
+                                                        <div class="mt-1 font-mono text-xs bg-blue-100 p-2 rounded">
+                                                            https://www.notion.so/<span class="text-blue-800 font-bold">dc89fddeb09148639940a75e7759b8bc</span>?v=...
+                                                        </div>
+                                                    </li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div>
@@ -134,12 +184,10 @@
                     
                     <!-- Single Page Input Section -->
                     <div id="page-section" class="space-y-4 {% if not request.form.get('page_id') %}hidden{% endif %}">
-                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Single Page Option</h3>
-                        <div>
+                        <h3 class="font-semibold text-lg mb-2 text-gray-700">Single Page Option</h3>                        <div>
                             <label for="page_id" class="block text-gray-700 font-medium mb-1">
                                 Notion Page ID:
-                            </label>
-                            <input
+                            </label>                            <input
                                 type="text"
                                 id="page_id"
                                 name="page_id"
@@ -147,12 +195,46 @@
                                 value="{{ request.form.get('page_id', '') }}"
                                 class="w-full rounded-md border border-gray-200 py-2 px-3 text-gray-900 shadow-xs focus:ring-2 focus:ring-blue-500"
                             >
-                            <p class="text-sm text-gray-500 mt-1">
-                                Enter a single page ID to cache just that page.
-                            </p>
-                            <p class="text-sm text-gray-500 mt-1">
-                                Find it in the page URL: notion.so/pagename-<span class="font-medium">9917363395904835a604ca7a6a358579</span>
-                            </p>
+                              <!-- Page ID Help Toggle Button (Moved below input) -->
+                            <div class="mt-2 {% if not request.form.get('page_id') %}hidden{% endif %}" id="page-help-toggle-container">
+                                <button type="button" id="page-help-toggle" onclick="toggleHelpBox('page-help-box')" 
+                                        class="flex items-center justify-between w-full text-sm text-blue-600 font-medium hover:text-blue-800">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span>Need help finding your Page ID?</span>
+                                    </div>
+                                    <div>
+                                        <svg id="page-chevron-down" class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                        <svg id="page-chevron-up" class="h-4 w-4 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                </button>
+                                
+                                <!-- Page ID Help Box (Initially Hidden) -->
+                                <div id="page-help-box" class="hidden mt-3 bg-blue-50 rounded-md p-3">
+                                    <div class="flex items-start">
+                                        <div>
+                                            <h3 class="text-sm font-medium text-blue-800">How to find your Notion Page ID</h3>
+                                            <div class="mt-2 text-sm text-blue-700">
+                                                <ol class="list-decimal ml-5 space-y-1">
+                                                    <li>Open your Notion page in the browser</li>
+                                                    <li>Look at the URL in your address bar</li>
+                                                    <li>Find the 32-character ID at the end of the URL:
+                                                        <div class="mt-1 font-mono text-xs bg-blue-100 p-2 rounded">
+                                                            https://www.notion.so/Page-Name-<span class="text-blue-800 font-bold">9917363395904835a604ca7a6a358579</span>
+                                                        </div>
+                                                    </li>
+                                                </ol>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div>
@@ -321,27 +403,7 @@
                     <span id="upload-status" class="hidden ml-3 text-gray-600"></span>
                 </div>
             </form>
-        </div>
-    </div>
-    
-    <!-- Navigation Buttons -->
-    <div class="flex gap-4 mb-6">
-        <a href="{{ url_for('file_storage.view_files') }}" 
-           id="view-content-button"
-           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
-            View Cached Content
-        </a>
-        <a href="{{ url_for('main.home') }}" 
-           id="home-button"
-           class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
-            Back to Home
-        </a>
-        <a href="{{ url_for('chatbot.chatbot_page') }}" 
-           id="chatbot-button"
-           class="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
-            Go to AI Assistant
-        </a>
-    </div>
+        </div>    </div>
 </div>
 
 <!-- Script for handling form submission and UI feedback -->
@@ -608,33 +670,87 @@
                 uploadButton.classList.remove('opacity-75');
             }
         }
-    });
-    
-    function toggleInputMode(mode) {
+    });    function toggleInputMode(mode) {
         const databaseSection = document.getElementById('database-section');
         const pageSection = document.getElementById('page-section');
         const databaseLabel = document.getElementById('database-label');
         const pageLabel = document.getElementById('page-label');
+        const databaseHelpToggleContainer = document.getElementById('database-help-toggle-container');
+        const pageHelpToggleContainer = document.getElementById('page-help-toggle-container');
+        
         if (mode === 'database') {
+            // Show database section and hide page section
             databaseSection.classList.remove('hidden');
             pageSection.classList.add('hidden');
             databaseLabel.classList.add('bg-white', 'shadow-xs');
             pageLabel.classList.remove('bg-white', 'shadow-xs');
+            
+            // Show database help toggle and hide page help toggle
+            databaseHelpToggleContainer.classList.remove('hidden');
+            pageHelpToggleContainer.classList.add('hidden');
+            
+            // Hide both help boxes when switching tabs
+            const databaseHelpBox = document.getElementById('database-help-box');
+            const pageHelpBox = document.getElementById('page-help-box');
+            databaseHelpBox.classList.add('hidden');
+            pageHelpBox.classList.add('hidden');
+            
+            // Reset chevron icons
+            document.getElementById('database-chevron-down').classList.remove('hidden');
+            document.getElementById('database-chevron-up').classList.add('hidden');
+            document.getElementById('page-chevron-down').classList.remove('hidden');
+            document.getElementById('page-chevron-up').classList.add('hidden');
             
             // Clear the page fields and set the custom_name field to use the database one
             document.getElementById('page_id').value = '';
             document.getElementById('db_custom_name').name = 'custom_name';
             document.getElementById('page_custom_name').name = 'unused_custom_name';
         } else {
+            // Show page section and hide database section
             databaseSection.classList.add('hidden');
             pageSection.classList.remove('hidden');
             databaseLabel.classList.remove('bg-white', 'shadow-xs');
             pageLabel.classList.add('bg-white', 'shadow-xs');
             
+            // Show page help toggle and hide database help toggle
+            databaseHelpToggleContainer.classList.add('hidden');
+            pageHelpToggleContainer.classList.remove('hidden');
+            
+            // Hide both help boxes when switching tabs
+            const databaseHelpBox = document.getElementById('database-help-box');
+            const pageHelpBox = document.getElementById('page-help-box');
+            databaseHelpBox.classList.add('hidden');
+            pageHelpBox.classList.add('hidden');
+            
+            // Reset chevron icons
+            document.getElementById('database-chevron-down').classList.remove('hidden');
+            document.getElementById('database-chevron-up').classList.add('hidden');
+            document.getElementById('page-chevron-down').classList.remove('hidden');
+            document.getElementById('page-chevron-up').classList.add('hidden');
+            
             // Clear the database fields and set the custom_name field to use the page one
             document.getElementById('database_id').value = '';
             document.getElementById('page_custom_name').name = 'custom_name';
             document.getElementById('db_custom_name').name = 'unused_custom_name';
+        }
+    }
+    
+    function toggleHelpBox(boxId) {
+        const helpBox = document.getElementById(boxId);
+        const isDatabase = boxId === 'database-help-box';
+        const chevronDown = document.getElementById(isDatabase ? 'database-chevron-down' : 'page-chevron-down');
+        const chevronUp = document.getElementById(isDatabase ? 'database-chevron-up' : 'page-chevron-up');
+        
+        if (helpBox.classList.contains('hidden')) {
+            // Show the help box
+            helpBox.classList.remove('hidden');
+            chevronDown.classList.add('hidden');
+            chevronUp.classList.remove('hidden');
+        } else {
+            // Hide the help box
+            helpBox.classList.add('hidden');
+            chevronDown.classList.remove('hidden');
+            chevronUp.classList.add('hidden');
         }
     }
     
