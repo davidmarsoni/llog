@@ -55,7 +55,7 @@ class MainAgentWorflow(Workflow):
             raise
 
     @step
-    async def query(self, ctx: Context, ev: QueryEvent) -> WriteEvent:
+    async def query(self, ctx: Context, ev: QueryEvent) -> ReviewEvent:
         logger.info("====== QUERY STEP STARTED ======")
         try:
             await ctx.set("prompt", ev.prompt)
@@ -88,13 +88,140 @@ class MainAgentWorflow(Workflow):
             logger.info(f"Research result received (first 100 chars): {str(result)[:100]}...")
             await ctx.set("research", str(result))
             logger.info("====== QUERY STEP COMPLETED ======")
-            return WriteEvent()
+            
+            # Now we go directly to the review step instead of write
+            original_prompt = await ctx.get("prompt")
+            research_info = str(result)
+            
+            logger.info("====== PREPARING FOR PRE-WRITING REVIEW ======")
+            # No answer yet, but we'll review the requirements and research
+            return ReviewEvent(answer="", is_pre_write_review=True)
         except Exception as e:
             logger.error(f"Error in query: {str(e)}\n{traceback.format_exc()}")
             raise
 
     @step
-    async def write(self, ctx: Context, ev: WriteEvent | RewriteEvent) -> ReviewEvent:
+    async def review(self, ctx: Context, ev: ReviewEvent) -> WriteEvent | StopEvent:
+        logger.info("====== REVIEW STEP STARTED ======")
+        try:
+            original_prompt = await ctx.get("prompt")
+            research_info = await ctx.get("research")
+            
+            # Check if this is a pre-write review (happens before writing) or post-write review
+            is_pre_write = getattr(ev, "is_pre_write_review", False)
+            
+            if is_pre_write:
+                logger.info("This is a PRE-WRITE review to guide the writing process")
+                
+                # Use LLM to detect special instructions in the prompt in any language
+                from services.llm.agents.instruction_parser import analyze_prompt_requirements
+                
+                # Get all requirements in one simple call (no await as it's not async)
+                requirements = analyze_prompt_requirements(original_prompt)
+                word_count_instruction = requirements.get('word_count_instruction')
+                context_instruction = requirements.get('context_instruction')
+                
+                # Prepare a review prompt that will identify only issues with the research
+                review_prompt = f"""Review the following research information and identify ONLY issues or problems:
+                
+                Original Prompt: {original_prompt}
+                Research Information: {research_info}
+                
+                ONLY point out:
+                1. Missing information needed to answer the question
+                2. Factual errors or inconsistencies in the research
+                3. Any critical context that is absent
+                {f'4. Issues with meeting: {word_count_instruction}' if word_count_instruction else ''}
+                {f'5. Issues with addressing: {context_instruction}' if context_instruction else ''}
+                
+                If the research is practically correct and sufficient AND directly answers the original prompt, respond with: 
+                "DIRECT_ANSWER: [Insert refined research as complete answer]" 
+                
+                DO NOT waste time describing what is correct - focus only on problems that need fixing.
+                """
+                
+                result = self.review_agent.chat(review_prompt)
+                logger.info(f"Pre-writing review result received: {str(result)[:100]}...")
+                
+                # Check if the review agent is providing a direct answer
+                if str(result).startswith("DIRECT_ANSWER:"):
+                    direct_answer = str(result).replace("DIRECT_ANSWER:", "").strip()
+                    logger.info("Review agent provided direct answer. Stopping workflow early.")
+                    return StopEvent(result=direct_answer)
+                
+                # Store the review guidance for the writing step
+                await ctx.set("review_guidance", str(result))
+                
+                # Now proceed to the write step
+                logger.info("Proceeding to write step with review guidance")
+                return WriteEvent(review_guidance=str(result))
+            else:
+                # This is a post-write review (after writing)
+                logger.info(f"POST-WRITE review: Answer to review (first 100 chars): {ev.answer[:100]}...")
+                
+                rewrite_count = await ctx.get("rewrite_count", 0)
+                rewrite_count += 1
+                await ctx.set("rewrite_count", rewrite_count)
+                
+                # Log the current rewrite count for debugging
+                logger.info(f"Current rewrite count: {rewrite_count}")
+                
+                # Use LLM to detect special instructions in the prompt in any language
+                from services.llm.agents.instruction_parser import analyze_prompt_requirements
+                
+                # Get all requirements
+                requirements = analyze_prompt_requirements(original_prompt)
+                word_count_instruction = requirements.get('word_count_instruction')
+                context_instruction = requirements.get('context_instruction')
+                
+                # Prepare a focused review prompt that identifies only issues
+                review_prompt = f"""Review the following answer and ONLY identify issues or problems:
+                
+                Original Prompt: {original_prompt}
+                Research Information: {research_info}
+                Answer to Review: {ev.answer}
+                
+                ONLY point out:
+                1. Content that does not match the research or original prompt
+                2. Missing answers to parts of the original question
+                3. Factual errors compared to the provided research
+                {f'4. Issues with the requirement: {word_count_instruction}' if word_count_instruction else ''}
+                
+                If the answer is practically correct, make minor refinements if needed and approve it.
+                DO NOT provide a comprehensive evaluation if the content is already acceptable.
+                """
+                
+                result = self.review_agent.chat(review_prompt)
+                logger.info(f"Post-write review result received: {str(result)}")
+                
+                # Check if we've already hit the max rewrite count
+                if rewrite_count >= 2:
+                    logger.info("Maximum rewrite attempts reached (2). Finishing the flow without further rewrites.")
+                    return StopEvent(result=ev.answer)
+                
+                logger.info("Asking if we should retry based on the review...")
+                
+                try_again = llm.complete(
+                    f"This is a review of an answer. If you think this review is bad enough "
+                    f"that it should be rewritten, respond with just the word RETRY. If the review is good, reply "
+                    f"with just the word CONTINUE. Here's the review: <review>{str(result)}</review>"
+                )
+                logger.info(f"Decision on whether to retry: {try_again.text}")
+                
+                if try_again.text == "RETRY":
+                    logger.info("Starting rewrite process based on review feedback")
+                    return WriteEvent(
+                        review_feedback=f"{str(result)}\nOriginal prompt: {original_prompt}\nResearch info: {research_info}"
+                    )
+                else:
+                    logger.info("Review is good! Finishing the flow.")
+                    return StopEvent(result=ev.answer)
+        except Exception as e:
+            logger.error(f"Error in review: {str(e)}\n{traceback.format_exc()}")
+            raise
+    
+    @step
+    async def write(self, ctx: Context, ev: WriteEvent) -> ReviewEvent:
         logger.info("====== WRITE STEP STARTED ======")
         try:
             original_prompt = await ctx.get("prompt")
@@ -104,11 +231,26 @@ class MainAgentWorflow(Workflow):
             logger.info(f"Retrieved from context: prompt='{original_prompt[:50]}...', research_info (first 100 chars): '{research_info[:100]}...'")
             logger.info(f"Message history available: {len(message_history) > 0} with {len(message_history)} messages")
             
+            # Get review guidance if available (from pre-write review)
+            review_guidance = getattr(ev, "review_guidance", None)
+            # Get review feedback if this is a rewrite
+            review_feedback = getattr(ev, "review_feedback", None)
+            
             prompt = (
                 f"Write a detailed, clear, and direct answer addressing the question: "
                 f"<question>{original_prompt}</question>. Use the following research as supporting information: "
                 f"<research>{research_info}</research>"
             )
+            
+            # Include pre-write review guidance if available
+            if review_guidance:
+                prompt += f"\n\nConsider this review guidance when writing your answer:\n<review_guidance>{review_guidance}</review_guidance>\n"
+                logger.info("Including pre-write review guidance")
+            
+            # Include review feedback if this is a rewrite
+            if review_feedback:
+                prompt += f"\n\nThis answer has been reviewed and the reviewer provided the following feedback that should be taken into account:\n<review_feedback>{review_feedback}</review_feedback>\n"
+                logger.info("Including post-write review feedback for rewrite")
             
             # Include conversation history if available
             if message_history and len(message_history) > 0:
@@ -116,95 +258,14 @@ class MainAgentWorflow(Workflow):
                 prompt += f"\n\nTake into account the following conversation history to ensure your response is contextually relevant:\n<conversation_history>\n{history_context}\n</conversation_history>\n"
                 logger.info("Including conversation history in write prompt")
             
-            if isinstance(ev, RewriteEvent):
-                logger.info("Rewrite event detected, adding review feedback to prompt")
-                prompt += (
-                    f" Note: This answer has been reviewed and the reviewer provided the following feedback that "
-                    f"should be taken into account: <review>{ev.review}</review>"
-                )
-            
             logger.info("Sending prompt to write agent...")
             result = self.write_agent.chat(prompt)
             
             logger.info(f"Write result received (first 100 chars): {str(result)[:100]}...")
             logger.info("====== WRITE STEP COMPLETED ======")
-            return ReviewEvent(answer=str(result))
+            
+            # Now proceed to the post-write review step
+            return ReviewEvent(answer=str(result), is_pre_write_review=False)
         except Exception as e:
             logger.error(f"Error in write: {str(e)}\n{traceback.format_exc()}")
-            raise
-
-    @step
-    async def review(self, ctx: Context, ev: ReviewEvent) -> StopEvent | RewriteEvent:
-        logger.info("====== REVIEW STEP STARTED ======")
-        try:
-            logger.info(f"Answer to review (first 100 chars): {ev.answer[:100]}...")
-            logger.info("Sending answer to review agent...")
-            
-            original_prompt = await ctx.get("prompt")
-            research_info = await ctx.get("research")
-            rewrite_count = await ctx.get("rewrite_count")
-            rewrite_count += 1
-            await ctx.set("rewrite_count", rewrite_count)
-            
-            # Log the current rewrite count for debugging
-            logger.info(f"Current rewrite count: {rewrite_count}")
-            
-            # Use LLM to detect special instructions in the prompt in any language
-            from services.llm.agents.instruction_parser import analyze_prompt_requirements
-            
-            # Get all requirements in one simple call (no await as it's not async)
-            requirements = analyze_prompt_requirements(original_prompt)
-            word_count_instruction = requirements.get('word_count_instruction')
-            context_instruction = requirements.get('context_instruction')
-            
-            # Prepare a comprehensive review prompt
-            review_prompt = f"""Review the following answer based on the original prompt and research information:
-            
-            Original Prompt: {original_prompt}
-
-            Research Information: {research_info}
-
-            Answer to Review: {ev.answer}
-
-            Please evaluate:
-            1. Does the answer preserve the context from the original prompt and research?
-            2. Does the answer directly address the question asked?
-            3. Is the information accurate based on the research provided?
-            {f'4. {word_count_instruction}' if word_count_instruction else ''}
-
-            """
-            result = self.review_agent.chat(review_prompt)
-            logger.info(f"Review result received: {str(result)}")
-            
-            # Check if we've already hit the max rewrite count BEFORE asking for another review
-            if rewrite_count >= 2:  # Changed from > 2 to >= 2 to limit to exactly 1 rewrite
-                logger.info("Maximum rewrite attempts reached (2). Finishing the flow without further rewrites.")
-                logger.info("====== REVIEW STEP COMPLETED (MAX REWRITES) ======")
-                return StopEvent(result=ev.answer)
-                
-            logger.info("Asking if we should retry based on the review...")
-            
-            try_again = llm.complete(
-                f"This is a review of an answer written by an agent. If you think this review is bad enough "
-                f"that the agent should try again, respond with just the word RETRY. If the review is good, reply "
-                f"with just the word CONTINUE. Here's the review: <review>{str(result)}</review>"
-            )
-            logger.info(f"Decision on whether to retry: {try_again.text}")
-            
-            if try_again.text == "RETRY":
-                logger.info("Reviewer said try again - starting rewrite process")
-                logger.info("====== REVIEW STEP COMPLETED (RETRY) ======")
-                return RewriteEvent(
-                    review=(
-                        f"{str(result)}\n"
-                        f"Original prompt: {original_prompt}\n"
-                        f"Research info: {research_info}"
-                    )
-                )
-            else:
-                logger.info("Reviewer thought it was good! Finishing the flow.")
-                logger.info("====== REVIEW STEP COMPLETED (SUCCESS) ======")
-                return StopEvent(result=ev.answer)
-        except Exception as e:
-            logger.error(f"Error in review: {str(e)}\n{traceback.format_exc()}")
             raise

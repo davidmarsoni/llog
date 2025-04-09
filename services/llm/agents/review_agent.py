@@ -6,7 +6,7 @@ import re
 # Define review functions
 def check_context_preservation(original_prompt: str, research_info: str, answer: str) -> str:
     """
-    Check if the answer preserves the context from the original prompt and research information.
+    Identify ONLY issues where the answer fails to preserve context from the original prompt and research.
     
     Args:
         original_prompt: The original question or prompt
@@ -14,13 +14,13 @@ def check_context_preservation(original_prompt: str, research_info: str, answer:
         answer: The final answer that needs to be reviewed
         
     Returns:
-        A review of whether the context is preserved in the answer
+        ONLY issues found with context preservation, or a brief approval message if no issues
     """
     return "This function will be executed by the LLM"
 
 def check_instruction_compliance(answer: str, instruction_type: str, instruction_value: str) -> str:
     """
-    Check if the answer follows specific instructions like word count limits.
+    Identify ONLY issues where the answer fails to follow specific instructions.
     
     Args:
         answer: The final answer that needs to be reviewed
@@ -28,7 +28,7 @@ def check_instruction_compliance(answer: str, instruction_type: str, instruction
         instruction_value: The expected value for the instruction (e.g., "5", "bullet_points")
         
     Returns:
-        A review of whether the instruction was followed
+        ONLY issues found with instruction compliance, or a brief approval message if no issues
     """
     return "This function will be executed by the LLM"
 
@@ -52,21 +52,22 @@ instruction_tool = FunctionTool.from_defaults(fn=check_instruction_compliance)
 word_count_tool = FunctionTool.from_defaults(fn=count_words)
 
 # Define detailed system prompt for the review agent
-review_system_prompt = """You are an expert review agent that carefully evaluates answers written by other agents.
-Your job is to:
+review_system_prompt = """You are an expert review agent that identifies only issues or problems with answers or research.
+Your job is focused on:
 
-1. Check if the answer preserves the context from the original prompt and research information
-2. Verify that all specific instructions in the prompt were followed (e.g., word limits, formatting)
-3. Identify any factual errors or inconsistencies with the provided research
-4. Evaluate if the answer directly addresses the original question
+1. ONLY point out things that are WRONG or missing - do not waste time describing what is correct
+2. If the answer or research is practically correct, rephrase it slightly if needed and terminate
+3. Only identify factual errors or inconsistencies with the provided research
+4. Only highlight if critical instructions were not followed
 
-When reviewing answers, pay special attention to:
-- Word count requirements (e.g., "write in 5 words", "summarize in 10 words")
-- Formatting instructions (e.g., "use bullet points", "write in paragraphs")
-- Completeness of the answer relative to the original question
-- Accuracy of information compared to the research provided
+Focus exclusively on problems:
+- Word count requirements that were violated (e.g., exceeding specified limits)
+- Critical formatting instructions that were ignored
+- Missing answers to parts of the original question
+- Factual errors compared to the provided research
 
-Provide a clear, objective assessment with specific examples of what needs improvement.
+Be concise and direct. If everything is sufficiently correct, just make minor improvements and approve it.
+DO NOT provide a comprehensive evaluation if the content is already acceptable.
 """
 
 # Define the review agent with enhanced tools and system prompt
@@ -74,7 +75,7 @@ review_agent = GenericFunctionCallingAgent.from_tools(
     tools=[context_tool, instruction_tool, word_count_tool],
     llm=llm,
     verbose=True,
-    allow_parallel_tool_calls=True,
+    allow_parallel_tool_calls=False,
     system_prompt=review_system_prompt
 )
 
