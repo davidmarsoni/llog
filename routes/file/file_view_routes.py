@@ -223,10 +223,11 @@ def move_item():
         
         if not item_id:
             flash("No item ID provided")
-            return redirect(url_for('file_storage.view_files'))
-
-        # Move the item
+            return redirect(url_for('file_storage.view_files'))        # Move the item
         move_item_to_folder(item_id, folder_path)
+        
+        # Flash success message
+        flash(f"Item moved successfully to {'Root' if not folder_path else folder_path}")
         
         # Force a refresh of the cache to ensure we have the latest data
         from services.llm_service import refresh_file_index_cache
@@ -266,15 +267,14 @@ def move_item():
                                 current_folder=current_folder,
                                 bucket_name=current_app.config.get('GCS_BUCKET_NAME'),
                                 min=min)
-        
-        # For regular requests, redirect back to the view
+        # For regular requests, redirect to the destination folder
         flash("Item moved successfully!")
         return redirect(url_for('file_storage.view_files', 
-                              page=page, 
+                              page=1,  # Start at first page in new folder 
                               per_page=per_page,
                               title=filter_title,
                               type=filter_type,
-                              folder=current_folder))
+                              folder=folder_path))  # Redirect to destination folder
                               
     except Exception as e:
         current_app.logger.error(f"Error moving item: {str(e)}")

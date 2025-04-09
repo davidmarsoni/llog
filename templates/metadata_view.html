@@ -4,20 +4,26 @@
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <!-- Header section with consistent button styling from view_files.html -->
-    <div class="mb-6 flex flex-wrap items-center justify-between">
-        <h1 class="text-3xl font-bold">
-            Metadata: {{ metadata.title or file_id }}
-        </h1>
-        <div class="flex space-x-2">
-            <a href="{{ url_for('file_storage.view_files') }}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm">
+    <!-- Header section with consistent button styling from view_files.html -->    <div class="mb-6 flex justify-between">
+        <div>
+            <h1 class="text-3xl font-bold">
+                Metadata View
+            </h1>
+            <p class="text-gray-500 mt-1">{{ metadata.title or file_id }}</p>
+        </div>
+        
+        <div class="flex space-x-3 items-start mt-1">
+            <a href="{{ url_for('file_storage.view_files') }}" class="px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium rounded-md shadow-sm text-md">
                 Back to Content
             </a>
-            <button id="generate-metadata-btn" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm flex items-center">
+            <button id="generate-metadata-btn" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-md shadow-sm flex items-center text-md">
                 <span class="loading loading-spinner loading-xs mr-2 hidden" id="generate-spinner"></span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M13.6 13.4A7 7 0 1 0 2 10a7 7 0 0 0 11.6 3.4zm-1.06-1.06a5 5 0 1 1 .7-.7l4.3 4.29a1 1 0 0 1-1.42 1.42l-4.3-4.3a1 1 0 0 1-.7.7z" clip-rule="evenodd" />
+                </svg>
                 <span id="generate-btn-text">Generate AI Metadata</span>
             </button>
-            <button id="save-metadata-btn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm">
+            <button id="save-metadata-btn" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm text-md">
                 Save Changes
             </button>
         </div>
@@ -26,9 +32,7 @@
     <!-- Alert message -->
     <div id="alert-container" class="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700 rounded shadow-xs hidden">
         <div id="alert-message"></div>
-    </div>
-
-    <!-- Flash messages -->
+    </div>    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -37,21 +41,19 @@
         {% endif %}
     {% endwith %}
 
-    <!-- File path display -->
-    {% if metadata.folder %}
-    <div class="mb-6 bg-white p-4 rounded-lg shadow-sm">
-        <div class="flex flex-wrap items-center text-sm text-gray-600">
-            <!-- Path display -->
-            <div class="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" />
-                </svg>
-                <span class="font-medium">File Path:</span>
-                <a href="{{ url_for('file_storage.view_files', folder='') }}" class="ml-2 text-blue-600 hover:text-blue-800">
-                    Root
-                </a>
-                
+    <!-- Main metadata card -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">        <div class="px-6 py-4 border-b bg-gray-50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-xl font-bold">File Details</h2>
+                    <p class="text-gray-500 text-sm">Manage file metadata information</p>
+                </div>
                 {% if metadata.folder %}
+                <div class="flex items-center text-sm text-gray-600">
+                    <a href="{{ url_for('file_storage.view_files', folder='') }}" class="text-blue-600 hover:text-blue-800">
+                        Root
+                    </a>
+                    
                     {% set path_parts = metadata.folder.split('/') %}
                     {% set current_path = '' %}
                     
@@ -69,28 +71,8 @@
                             </a>
                         {% endif %}
                     {% endfor %}
+                </div>
                 {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Main metadata card -->
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b bg-gray-50 flex justify-between items-center">
-            <div>
-                <h2 class="text-xl font-bold">File Details</h2>
-                <p class="text-gray-500 text-sm">Manage file metadata information</p>
-            </div>
-            <div>
-                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full
-                    {% if metadata.auto_metadata.auto_generated %}
-                        bg-green-100 text-green-800
-                    {% else %}
-                        bg-yellow-100 text-yellow-800
-                    {% endif %}">
-                    {{ "AI Generated Metadata" if metadata.auto_metadata.auto_generated else "Basic Metadata" }}
-                </span>
             </div>
         </div>
         
@@ -151,9 +133,7 @@
                             <input type="text" id="created_at" 
                                    class="w-full px-4 py-2 border rounded-md shadow-xs bg-gray-50"
                                    value="{{ metadata.created_at | timestamp_to_date }}" readonly>
-                        </div>
-                        
-                        {% if metadata.filename %}
+                        </div>                        {% if metadata.filename %}
                         <div>
                             <label for="filename" class="block text-sm font-medium text-gray-700 mb-1">Original Filename</label>
                             <input type="text" id="filename" name="filename" 
@@ -193,11 +173,10 @@
                 <!-- Themes and Topics -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Themes -->
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
+                    <div>                        <div class="flex justify-between items-center mb-3">
                             <h3 class="text-lg font-semibold">Themes</h3>
                             <button type="button" id="add-theme-btn" 
-                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm">
                                 Add Theme
                             </button>
                         </div>
@@ -217,11 +196,10 @@
                     </div>
                     
                     <!-- Topics -->
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
+                    <div>                        <div class="flex justify-between items-center mb-3">
                             <h3 class="text-lg font-semibold">Topics</h3>
                             <button type="button" id="add-topic-btn" 
-                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm">
                                 Add Topic
                             </button>
                         </div>
@@ -246,11 +224,10 @@
                 <!-- Keywords and Entities -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Keywords -->
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
+                    <div>                        <div class="flex justify-between items-center mb-3">
                             <h3 class="text-lg font-semibold">Keywords</h3>
                             <button type="button" id="add-keyword-btn" 
-                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm">
                                 Add Keyword
                             </button>
                         </div>
@@ -270,11 +247,10 @@
                     </div>
                     
                     <!-- Entities -->
-                    <div>
-                        <div class="flex justify-between items-center mb-3">
+                    <div>                        <div class="flex justify-between items-center mb-3">
                             <h3 class="text-lg font-semibold">Entities</h3>
                             <button type="button" id="add-entity-btn" 
-                                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md">
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm">
                                 Add Entity
                             </button>
                         </div>

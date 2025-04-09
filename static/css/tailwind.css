@@ -403,6 +403,9 @@
   .mr-1 {
     margin-right: calc(var(--spacing) * 1);
   }
+  .mr-1\.5 {
+    margin-right: calc(var(--spacing) * 1.5);
+  }
   .mr-2 {
     margin-right: calc(var(--spacing) * 2);
   }
@@ -811,6 +814,10 @@
     border-style: var(--tw-border-style);
     border-width: 0px;
   }
+  .border-2 {
+    border-style: var(--tw-border-style);
+    border-width: 2px;
+  }
   .border-t {
     border-top-style: var(--tw-border-style);
     border-top-width: 1px;
@@ -873,6 +880,9 @@
   }
   .border-red-500 {
     border-color: var(--color-red-500);
+  }
+  .border-white {
+    border-color: var(--color-white);
   }
   .border-yellow-400 {
     border-color: var(--color-yellow-400);

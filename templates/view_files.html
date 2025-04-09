@@ -3,15 +3,14 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <!-- Main content - no longer hidden behind a loading screen -->
-    <div id="main-content">
-    <div class="mb-6 flex flex-wrap items-center justify-between">
+    <div id="main-content">    <div class="mb-6 flex flex-wrap items-center justify-between">
         <h1 class="text-3xl font-bold">Cached Content</h1>
-        <div class="flex space-x-2">
-            <a href="{{ url_for('file_storage.add_files') }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md shadow-sm">
+        <div class="flex space-x-2">            
+            <a href="{{ url_for('file_storage.add_files') }}" class="inline-flex items-center justify-center rounded-md border border-blue-600 bg-blue-600 px-3 py-2 text-md text-white shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                 Add new Content
             </a>
             <form action="{{ url_for('file_view.refresh_cache') }}" method="post" class="inline" id="refresh-form">
-                <button type="submit" id="refresh-button" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-md shadow-sm">Refresh Cache</button>
+                <button type="submit" id="refresh-button" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-md text-gray-700 shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-blue-500">Refresh Cache</button>
             </form>
             
             <script>
@@ -292,9 +291,11 @@
                     <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
                         <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
                     </svg>
-                </button>
-            </div>
-            <form action="{{ url_for('file_view.move_item') }}" method="post">
+                </button>            </div>
+            <form hx-post="{{ url_for('file_view.move_item') }}" 
+                  hx-target="#content-area"
+                  hx-swap="innerHTML"
+                  hx-indicator="#loading-indicator">
                 <div class="mb-4">
                     <p class="text-sm text-gray-600 mb-4">Moving item: <span id="item-name" class="font-medium"></span></p>
                     <label for="folder_path" class="block text-sm font-medium text-gray-700 mb-1">Select Destination Folder</label>
@@ -512,45 +513,40 @@ function initializeUI() {
 
 // Function to set up folder management buttons with direct event handlers
 function setupFolderManagementButtons() {
-    // Set up create folder buttons
-    const createFolderButtons = document.querySelectorAll('[data-action="create-folder"]');
-    createFolderButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+    // Use event delegation for all modal-triggering buttons
+    document.addEventListener('click', function(e) {
+        // Create folder buttons
+        if (e.target.closest('[data-action="create-folder"]')) {
             e.preventDefault();
-            const parentPath = this.getAttribute('data-parent-path') || '';
+            const button = e.target.closest('[data-action="create-folder"]');
+            const parentPath = button.getAttribute('data-parent-path') || '';
             openCreateFolderModal(parentPath);
-        });
-    });
-    
-    // Set up rename folder buttons
-    const renameFolderButtons = document.querySelectorAll('[data-action="rename-folder"]');
-    renameFolderButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        }
+        
+        // Rename folder buttons
+        if (e.target.closest('[data-action="rename-folder"]')) {
             e.preventDefault();
-            const folderPath = this.getAttribute('data-folder-path') || '';
+            const button = e.target.closest('[data-action="rename-folder"]');
+            const folderPath = button.getAttribute('data-folder-path') || '';
             openRenameFolderModal(folderPath);
-        });
-    });
-    
-    // Set up delete folder buttons
-    const deleteFolderButtons = document.querySelectorAll('[data-action="delete-folder"]');
-    deleteFolderButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        }
+        
+        // Delete folder buttons
+        if (e.target.closest('[data-action="delete-folder"]')) {
             e.preventDefault();
-            const folderPath = this.getAttribute('data-folder-path') || '';
+            const button = e.target.closest('[data-action="delete-folder"]');
+            const folderPath = button.getAttribute('data-folder-path') || '';
             openDeleteFolderModal(folderPath);
-        });
-    });
-    
-    // Set up move item buttons
-    const moveItemButtons = document.querySelectorAll('[data-action="move-item"]');
-    moveItemButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        }
+        
+        // Move item buttons
+        if (e.target.closest('[data-action="move-item"]')) {
             e.preventDefault();
-            const itemId = this.getAttribute('data-item-id') || '';
-            const itemTitle = this.getAttribute('data-item-title') || 'this item';
+            const button = e.target.closest('[data-action="move-item"]');
+            const itemId = button.getAttribute('data-item-id') || '';
+            const itemTitle = button.getAttribute('data-item-title') || 'this item';
             openMoveItemModal(itemId, itemTitle);
-        });
+        }
     });
     
     // Set up form submissions with visual feedback
@@ -598,6 +594,12 @@ function setupModalFormSubmissions() {
 
 // Function to submit a form with visual feedback
 function submitFormWithFeedback(form, actionText, operationType) {
+    // Prevent submitting multiple times
+    if (form.dataset.isSubmitting === 'true') {
+        return;
+    }
+    form.dataset.isSubmitting = 'true';
+    
     // Create notification element
     const notification = document.createElement('div');
     
@@ -655,12 +657,20 @@ function submitFormWithFeedback(form, actionText, operationType) {
         submitButton.classList.add('opacity-75', 'cursor-wait');
     }
     
-    // Close the modal
+    // Close the modal only after a small delay to ensure the form data is captured
     const modalId = form.closest('[id]').id;
-    closeModal(modalId);
+    setTimeout(() => {
+        closeModal(modalId);
+    }, 50);
     
-    // Now submit the form
-    form.submit();
+    // Now submit the form after the modal is closed
+    if (form.hasAttribute('hx-post')) {
+        // Use HTMX to submit the form
+        htmx.trigger(form, 'submit');
+    } else {
+        // Use standard form submission
+        form.submit();
+    }
     
     // Set a timeout to remove the notification after a while
     setTimeout(() => {
@@ -675,6 +685,9 @@ function submitFormWithFeedback(form, actionText, operationType) {
                 }
             }, 300);
         }
+        
+        // Reset form state
+        form.dataset.isSubmitting = 'false';
     }, 3000); // 3 seconds timeout
 }
 
