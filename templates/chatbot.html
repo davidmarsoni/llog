@@ -337,8 +337,7 @@
                     const aiResponsePlaceholder = document.getElementById(aiResponseId);
                     if (aiResponsePlaceholder) {
                         aiResponsePlaceholder.outerHTML = html;
-                        
-                        // Process markdown in the new response
+                          // Process markdown in the new response
                         const lastMessage = chatContainer.lastElementChild;
                         if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
                             const messageContent = lastMessage.querySelector('.bg-blue-100');
@@ -348,6 +347,14 @@
                                 const textContent = messageContent.textContent;
                                 messageContent.innerHTML = marked.parse(textContent);
                                 messageContent.classList.add('markdown-content');
+                                
+                                // Add AI assistant's response to message history
+                                const assistantMessage = {
+                                    role: 'assistant',
+                                    content: textContent
+                                };
+                                messageHistory.push(assistantMessage);
+                                console.log('Added assistant response to history:', textContent.substring(0, 50) + '...');
                             }
                         }
                         

@@ -1,6 +1,7 @@
 """
 LLM chat interaction functionality using LlamaIndex
 """
+import json
 import os
 from flask import current_app
 from llama_index.core.llms import ChatMessage, MessageRole

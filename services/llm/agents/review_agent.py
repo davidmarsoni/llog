@@ -74,7 +74,7 @@ DO NOT provide a comprehensive evaluation if the content is already acceptable.
 review_agent = GenericFunctionCallingAgent.from_tools(
     tools=[context_tool, instruction_tool, word_count_tool],
     llm=llm,
-    verbose=True,
+    verbose=False,
     allow_parallel_tool_calls=False,
     system_prompt=review_system_prompt
 )

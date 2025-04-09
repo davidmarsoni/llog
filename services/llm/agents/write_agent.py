@@ -11,7 +11,7 @@ load_dotenv()
 write_agent = GenericFunctionCallingAgent.from_tools(
     tools=[],
     llm=llm,
-    verbose=True,
+    verbose=False,
     allow_parallel_tool_calls=False,
     system_prompt="""You are an agent that writes structured, well-organized answers based on research provided by another agent.
                 Instructions:

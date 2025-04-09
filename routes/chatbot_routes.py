@@ -94,7 +94,7 @@ def get_agent_response():
         mode = request.form.get('mode', 'files')
         listOfIndexes = request.form.getlist('listOfIndexes[]')
         
-        print(f"DEBUG : Message: {message}, Modules: {modules}, Use Rag: {useRag}, Mode: {mode}, List of Indexes: {listOfIndexes}")
+        print(f"DEBUG get_agent_response : Message: {message},lstMessageHistory: {lstMessageHistory}, creativity: {creativity}, maxTokens: {maxTokens}, useRag: {useRag}, modules: {modules}, mode: {mode}, listOfIndexes: {listOfIndexes}")
          
         import asyncio
         import nest_asyncio
