@@ -37,3 +37,9 @@ node_modules/
 test/
 test_*
 services/llm/empty_folders.json
+
+# Example generated files
+examples/notion_cache/*
+examples/simple_cache/*
+examples/query_cache/*
+examples/vector_cache/*
