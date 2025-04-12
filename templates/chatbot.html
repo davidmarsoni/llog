@@ -2,12 +2,11 @@
 
 {% block content %}
 <!--<h1 class="text-3xl font-bold mb-4 mt-6">{% block title %}AI Assistant{% endblock %}</h1>-->
-    
-    <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
+      <div class="bg-white shadow-sm rounded-lg p-6 mb-6 flex flex-col min-h-[650px] max-h-[900px]">
         <!-- Outer container with flex layout to accommodate content panel -->
-        <div class="flex w-full gap-4">
+        <div class="flex w-full gap-4 flex-grow">
             <!-- Content panel (hidden by default, will slide in when toggled) -->
-            <div id="content-options" class="w-0 h-0 overflow-hidden transition-all duration-300">
+            <div id="content-options" class="w-0 h-0 overflow-hidden">
                 <div class="bg-gray-50 p-4 border rounded-lg h-full">
                     <!-- Advanced Settings Section -->
                     <div class="mb-4">
@@ -15,7 +14,7 @@
                         
                         <!-- Creativity Slider -->
                         <div class="mb-4">
-                            <label for="creativity" class="block text-sm font-medium text-gray-700 mb-1">Creativity</label>
+                            <label for="creativity" class="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
                             <div class="flex items-center">
                                 <span class="text-xs text-gray-500 mr-2">Low</span>
                                 <input type="range" id="creativity" name="creativity" min="0" max="2" value="1"  step="0.1"
@@ -28,12 +27,12 @@
                         <!-- Max Tokens -->
                         <div class="mb-4">
                             <label for="maxToken" class="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
-                            <input type="number" id="maxToken" name="maxToken" value="1000" min="100" max="4000" 
+                            <input type="number" id="maxToken" name="maxToken" value="4000" min="64" max="65536" step="16"
                                    class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
                         </div>
                         
                         <!-- Modules -->
-                        <div class="mb-4">
+                        <div class="hidden mb-4">
                             <label for="modules" class="block text-sm font-medium text-gray-700 mb-1">Modules</label>
                             <select id="modules" name="modules" class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
                                 <option value="default">Default</option>
@@ -51,12 +50,10 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Content Selection Section - Now controlled by Use RAG -->
+                      <!-- Content Selection Section - Now controlled by Use RAG -->
                     <div id="content-selection-container" class="hidden">
-                        <h3 class="font-semibold text-gray-700 mb-2">Content Selection</h3>
-                        <p class="text-sm text-gray-600 mb-2">Select content to use for context:</p>
-                        <div id="content-indexes-container" class="max-h-[500px] overflow-y-auto border rounded-md p-2 bg-white">
+                        <p class="font-semibold text-gray-600 mb-2">Select content to use for context:</p>
+                        <div id="content-indexes-container" class="max-h-[240px] overflow-y-auto border rounded-md p-2 bg-white">
                             {% if indexes %}
                                 {% for index in indexes %}                                <div class="flex items-center mb-1">
                                     <input type="checkbox" 
@@ -77,17 +74,15 @@
                                 </p>
                             {% endif %}
                         </div>
-                        <button id="refresh-indexes" class="mt-2 text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 transition-colors duration-200">
+                        <button id="refresh-indexes" class=" hidden mt-2 text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200">
                             Refresh available indexes
                         </button>
                     </div>
                 </div>
-            </div>
-        
-            <!-- Main chat container (will resize when content panel opens) -->
-            <div class="grow transition-all duration-300">
+            </div>            <!-- Main chat container (will resize when content panel opens) -->
+            <div class="grow">
                 <!-- Chat Container -->
-                <div id="chat-container" class="border rounded-lg p-4 mb-4 h-9/10 overflow-y-auto bg-gray-50">
+                <div id="chat-container" class="border rounded-lg p-4 mb-4 overflow-y-auto bg-gray-50 min-h-[450px] max-h-[450px]">
                     <!-- Initial messages if any -->
                     {% for message in messages %}
                         <div class="mb-4 {% if message.role == 'user' %}flex justify-end{% endif %}">
@@ -142,14 +137,13 @@
                                     <option value="agents">All Agents</option>
                                 </select>
                             </div>
-                            
-                            <!-- Advanced Mode toggle moved here -->
+                              <!-- Advanced Mode toggle moved here -->
                             <div class="flex items-center">
-                                <label for="use-content" class="text-sm mr-2 text-gray-700">Advanced Mode</label>
-                                <div class="relative inline-block w-10 mr-4 align-middle select-none transition duration-200 ease-in">
+                                <label for="use-content-toggle" class="text-sm mr-2 text-gray-700">Advanced Mode</label>
+                                <div id="use-content-toggle" class="relative inline-block w-10 mr-4 align-middle select-none ease-in cursor-pointer">
                                     <input type="checkbox" id="use-content" class="sr-only peer">
                                     <div class="block h-6 w-10 rounded-full bg-gray-300 peer-checked:bg-blue-500"></div>
-                                    <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transition-all duration-300 transform peer-checked:translate-x-4"></div>
+                                    <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transform peer-checked:translate-x-4"></div>
                                 </div>
                                 
                                 <div id="send-loading" class="loading-indicator mr-2" style="display: none;">
@@ -157,7 +151,7 @@
                                 </div>
                                 <button id="send-button" 
                                         type="submit" 
-                                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200">
+                                        class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                     Send
                                 </button>
                             </div>
@@ -173,7 +167,7 @@
 
         <!-- Error toast -->
         <div id="error-toast" 
-             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg opacity-0 pointer-events-none z-50">
             <div class="flex items-center">
                 <div class="shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -189,8 +183,8 @@
         </div>
     </div>
     
-    <div class="mt-6">
-        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200">
+    <div class="hidden mt-6">
+        <a href="{{ url_for('main.home') }}" class="inline-block bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md">
             Back to Home
         </a>
     </div>
@@ -447,10 +441,23 @@
                 
                 chatForm.setAttribute('hx-post', targetUrl);
             });
+              // Toggle advanced options visibility (renamed from content options)
+            // Add event listener to the checkbox
+            useContent.addEventListener('change', toggleAdvancedOptions);
             
-            // Toggle advanced options visibility (renamed from content options)
-            useContent.addEventListener('change', function() {
-                if (this.checked) {
+            // Add event listener to the toggle element itself
+            document.getElementById('use-content-toggle').addEventListener('click', function() {
+                // Toggle the checkbox
+                useContent.checked = !useContent.checked;
+                
+                // Trigger the change event to update the UI
+                const changeEvent = new Event('change');
+                useContent.dispatchEvent(changeEvent);
+            });
+            
+            // Function to handle toggling advanced options
+            function toggleAdvancedOptions() {
+                if (useContent.checked) {
                     // Show the advanced settings panel
                     contentOptions.style.width = '300px';
                     contentOptions.style.height = 'auto';
@@ -461,8 +468,8 @@
                     contentOptions.style.height = '0';
                     document.querySelector('.grow').style.maxWidth = '100%';
                 }
-                useContentInput.value = this.checked;
-            });
+                useContentInput.value = useContent.checked;
+            }
             
             // Toggle content selection visibility based on Use RAG toggle
             useRagCheckbox.addEventListener('change', function() {
@@ -638,7 +645,7 @@
                     
                     // Style links
                     container.querySelectorAll('a').forEach(link => {
-                        link.classList.add('text-blue-600', 'border-b', 'border-blue-500', 'hover:opacity-80', 'transition-opacity');
+                        link.classList.add('text-blue-600', 'border-b', 'border-blue-500', 'hover:opacity-80');
                     });
                     
                     // Style horizontal rules
