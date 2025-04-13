@@ -127,7 +127,7 @@ def get_agent_response():
         response = loop.run_until_complete(run_async_function())
         
         # return the response as JSON
-        print("Fin de process Agent !!!!!!!!!!!")
+        print("=== End of get_agent_response ===")
         print(response)
         #return jsonify(response)
         return render_template('components/chat_messages.html',

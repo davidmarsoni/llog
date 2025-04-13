@@ -37,8 +37,9 @@ _folder_cache = {
     'is_loading': False
 }
 
-# Store empty folders
+# Store empty folders in memory
 _empty_folders = set()
+# Store the empty folders information in the bucket root
 _empty_folders_file = 'empty_folders.json'
 
 # Global loading state flag
@@ -79,15 +80,23 @@ def set_cache_loading(state):
     _cache_loading = state
 
 def _load_empty_folders():
-    """Load empty folders from persistent storage"""
+    """Load empty folders from persistent storage in the bucket"""
     global _empty_folders
     try:
-        # Check if running in Google Cloud or locally
-        local_folder_path = os.path.join(os.path.dirname(__file__), _empty_folders_file)
+        # Get storage client and bucket
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        if not bucket_name:
+            raise ValueError("GCS_BUCKET_NAME environment variable or config not set")
+            
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(_empty_folders_file)
         
-        if os.path.exists(local_folder_path):
-            with open(local_folder_path, 'r') as f:
-                _empty_folders = set(json.load(f))
+        if blob.exists():
+            # Download and parse the empty folders JSON
+            content = blob.download_as_string()
+            _empty_folders = set(json.loads(content))
+            current_app.logger.info(f"Loaded {len(_empty_folders)} empty folders from bucket")
         else:
             _empty_folders = set()
             _save_empty_folders()
@@ -96,12 +105,22 @@ def _load_empty_folders():
         _empty_folders = set()
 
 def _save_empty_folders():
-    """Save empty folders to persistent storage"""
+    """Save empty folders to persistent storage in the bucket"""
     try:
-        # Save to local file
-        local_folder_path = os.path.join(os.path.dirname(__file__), _empty_folders_file)
-        with open(local_folder_path, 'w') as f:
-            json.dump(list(_empty_folders), f)
+        # Get storage client and bucket
+        client = get_storage_client()
+        bucket_name = os.getenv("GCS_BUCKET_NAME") or current_app.config.get('GCS_BUCKET_NAME')
+        if not bucket_name:
+            raise ValueError("GCS_BUCKET_NAME environment variable or config not set")
+            
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(_empty_folders_file)
+        
+        # Convert set to list for JSON serialization and save to bucket
+        json_data = json.dumps(list(_empty_folders))
+        blob.upload_from_string(json_data, content_type='application/json')
+        
+        current_app.logger.info(f"Saved {len(_empty_folders)} empty folders to bucket root: {_empty_folders_file}")
     except Exception as e:
         current_app.logger.error(f"Error saving empty folders: {str(e)}")
 
@@ -526,7 +545,7 @@ def _ensure_folder_exists(folder_path: str):
 
 def rename_folder(folder_path: str, new_name: str):
     """
-    Rename a folder and update all items in it
+    Rename a folder and update all items in it, including subfolders
     
     Args:
         folder_path (str): The current folder path
@@ -553,7 +572,7 @@ def rename_folder(folder_path: str, new_name: str):
         # Check if target name already exists
         if any(f['path'] == new_path for f in folders):
             raise ValueError(f"Folder {new_path} already exists")
-            
+        
         # Get all items in this folder and subfolders
         items = get_available_indexes()
         affected_items = [item for item in items if item['folder'] == folder_path or 
@@ -570,11 +589,30 @@ def rename_folder(folder_path: str, new_name: str):
                 new_folder = old_folder.replace(folder_path, new_path, 1)
                 
             _update_item_metadata(item['id'], {'folder': new_folder})
+        
+        # Update empty folders list for subfolders
+        global _empty_folders
+        updated_empty_folders = set()
+        
+        for folder in _empty_folders:
+            if folder == folder_path:
+                # Direct match - use the new path
+                updated_empty_folders.add(new_path)
+            elif folder.startswith(f"{folder_path}/"):
+                # Subfolder - replace the prefix
+                updated_empty_folders.add(folder.replace(folder_path, new_path, 1))
+            else:
+                # Not affected - keep as is
+                updated_empty_folders.add(folder)
+        
+        _empty_folders = updated_empty_folders
+        _save_empty_folders()
             
         # Refresh caches
         refresh_file_index_cache()
         _sync_reload_folder_cache()
         
+        current_app.logger.info(f"Renamed folder from {folder_path} to {new_path}, affecting {len(affected_items)} items")
         return new_path
         
     except Exception as e:
@@ -583,7 +621,7 @@ def rename_folder(folder_path: str, new_name: str):
 
 def delete_folder(folder_path: str, delete_contents: bool = False):
     """
-    Delete a folder
+    Delete a folder and manage all items within it and its subfolders
     
     Args:
         folder_path (str): The folder path to delete
@@ -611,19 +649,33 @@ def delete_folder(folder_path: str, delete_contents: bool = False):
         path_parts = folder_path.split('/')
         parent_path = '/'.join(path_parts[:-1])
         
-        if delete_contents:
-            # This would require deleting the actual files, which we're not implementing here.
-            # Instead, we'll just move them to the parent folder
-            pass
-            
-        # Move all items to the parent folder
+        # Move all items to the parent folder (including those in subfolders)
         for item in affected_items:
             _update_item_metadata(item['id'], {'folder': parent_path})
+        
+        # Remove the deleted folder and all its subfolders from the empty folders list
+        global _empty_folders
+        folders_to_remove = set()
+        
+        for folder in _empty_folders:
+            if folder == folder_path or folder.startswith(f"{folder_path}/"):
+                folders_to_remove.add(folder)
+        
+        # Remove all the identified folders
+        _empty_folders -= folders_to_remove
+        
+        # If the parent folder is now being used, ensure it's not in empty_folders
+        if affected_items and parent_path in _empty_folders:
+            _empty_folders.remove(parent_path)
+        
+        # Save the updated empty folders list
+        _save_empty_folders()
             
         # Refresh caches
         refresh_file_index_cache()
         _sync_reload_folder_cache()
         
+        current_app.logger.info(f"Deleted folder {folder_path}, moved {len(affected_items)} items to {parent_path}")
         return len(affected_items)
         
     except Exception as e:
