@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 import os
+import tempfile
+import pickle # Added import
 
 from services.storage_service import get_file_metadata, update_file_metadata, get_storage_client
-from services.document_service import extract_auto_metadata 
+from services.utils.metadata import extract_auto_metadata 
 from services.utils.cache import get_folders, move_item_to_folder, refresh_file_index_cache 
 from .route_utils import add_cache_headers 
 

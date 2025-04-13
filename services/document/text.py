@@ -9,7 +9,7 @@ from flask import current_app
 from llama_index.core import Document, VectorStoreIndex
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from services.storage_service import generate_uuid, get_storage_client
-from services.document.metadata import extract_auto_metadata
+from services.utils.metadata import extract_auto_metadata
 
 def process_text_file(file_stream, filename, custom_name=None):
     """Process a text file (txt, md) and cache it for LLM processing"""

@@ -10,9 +10,9 @@ The goal is to provide a simple and accurate way to search for notes in Notion, 
 
 See the [Wiki](https://github.com/davidmarsoni/Llog/wiki) for full documentation, examples, operational details and other information.
 
-## local setup
+## Local Setup
 
-Install the nessesary dependencies for both the backend and frontend:
+Install the necessary dependencies for both the backend and frontend:
 
 backend:
 
@@ -20,7 +20,7 @@ backend:
 pip install -r requirements.txt
 ```
 
-p.s. You may need have admin rights to install the packages. If you cannot obtain admin rights, you can use a virtual environment to install the packages locally.
+p.s. You may need admin rights to install the packages. If you cannot obtain admin rights, you can use a virtual environment to install the packages locally.
 
 ```bash
 python -m venv venv
@@ -86,7 +86,7 @@ First, make sure you have the [Google Cloud SDK](https://cloud.google.com/sdk/do
 gcloud init
 ```
 
-You will be prompted to select a account and a project. Make sure to select the project you want to use.
+You will be prompted to select an account and a project. Make sure to select the project you want to use.
 
 ### Run the project
 
@@ -102,14 +102,14 @@ Then, open another terminal and run the following command to start the backend s
 flask run
 ```
 
-p.s you can add the `--debug` flag to the command to enable debug mode.
+P.S. You can add the `--debug` flag to the command to enable debug mode.
 
-then go to [http://localhost:5000](http://localhost:5000) to see the app in action.
+Then go to [http://localhost:5000](http://localhost:5000) to see the app in action.
 
 ## Deploy to Google Cloud Run
 This project is designed to be deployed on Google Cloud Run. The deployment process is automated using a Dockerfile, which allows you to build and run the application in a containerized environment.
 
-Note: that the deployment has been automated with the google cloud build service. Each time you push a new commit on the main branch, the service will automatically build and deploy the new version of the app to Google Cloud Run.
+Note that the deployment has been automated with the google cloud build service. Each time you push a new commit on the main branch, the service will automatically build and deploy the new version of the app to Google Cloud Run.
 
 The following section then describes how to deploy the app manually if you need to test the deployment of a particular commit or if you want to deploy the app to a different project.
 
@@ -120,6 +120,8 @@ First, make sure you have the [Google Cloud SDK](https://cloud.google.com/sdk/do
 ```bash
 gcloud init
 ```
+
+N.B. Make sure your computer is in a correct UTC timezone. If not, the connection to the Google Cloud SDK will fail.
 
 ### Build the docker image
 
@@ -150,6 +152,7 @@ docker push gcr.io/your-project-id/flask-app
 ```
 
 ### Deploy the image
+
 Deploy the image to Google Cloud Run
 
 ```bash

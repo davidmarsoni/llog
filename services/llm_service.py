@@ -9,7 +9,6 @@ from services.llm import (
     get_available_indexes,
     query_content,
     get_content_metadata,
-    get_recommender_system
 )
 from services.utils.cache import get_available_indexes as get_indexes 
 
@@ -41,6 +40,5 @@ __all__ = [
     'refresh_file_index_cache',
     'get_available_indexes',
     'query_content',
-    'get_content_metadata',
-    'get_recommender_system'
+    'get_content_metadata'
 ]

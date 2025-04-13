@@ -10,7 +10,7 @@ from llama_index.readers.notion import NotionPageReader
 from llama_index.core import VectorStoreIndex
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from services.storage_service import generate_uuid, get_storage_client
-from services.document_service import extract_auto_metadata
+from services.utils.metadata import extract_auto_metadata
 from services.notion.utils import get_notion_client, extract_notion_page_title, extract_notion_content_as_text, download_blob_to_memory
 
 def cache_notion_page(page_id, custom_name=None, item_uuid=generate_uuid()):

@@ -12,7 +12,7 @@ from llama_index.core import Document, VectorStoreIndex
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from llama_index.readers.file import PDFReader
 from services.storage_service import generate_uuid, get_storage_client
-from services.document.metadata import extract_auto_metadata
+from services.utils.metadata import extract_auto_metadata
 
 def process_pdf_file(file_stream, filename, custom_name=None):
     """Process a PDF file and cache it for LLM processing"""
