@@ -6,8 +6,8 @@
         <!-- Outer container with flex layout to accommodate content panel -->
         <div class="flex w-full gap-4 flex-grow">
             <!-- Content panel (hidden by default, will slide in when toggled) -->
-            <div id="content-options" class="w-0 h-0 overflow-hidden">
-                <div class="bg-gray-50 p-4 border rounded-lg h-full">
+            <div id="content-options" class="w-0 h-0 overflow-hidden transition-all duration-300 ease-in-out">
+                <div class="bg-gray-50 p-4 border rounded-lg h-full w-[300px] flex flex-col">
                     <!-- Advanced Settings Section -->
                     <div class="mb-4">
                         <h3 class="font-semibold text-gray-700 mb-2">Advanced Settings</h3>
@@ -28,7 +28,7 @@
                         <div class="mb-4">
                             <label for="maxToken" class="block text-sm font-medium text-gray-700 mb-1">Max Tokens</label>
                             <input type="number" id="maxToken" name="maxToken" value="4000" min="64" max="65536" step="16"
-                                   class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5">
+                                   class="block w-full rounded-md border-gray-300 bg-white shadow-xs focus:border-blue-500 focus:ring-blue-500 text-sm py-1.5 px-2">
                         </div>
                         
                         <!-- Modules -->
@@ -51,11 +51,12 @@
                         </div>
                     </div>
                       <!-- Content Selection Section - Now controlled by Use RAG -->
-                    <div id="content-selection-container" class="hidden">
-                        <p class="font-semibold text-gray-600 mb-2">Select content to use for context:</p>
-                        <div id="content-indexes-container" class="max-h-[240px] overflow-y-auto border rounded-md p-2 bg-white">
+                    <div id="content-selection-container" class="hidden flex-grow min-h-0 flex flex-col">
+                        <p class="font-semibold text-gray-600 mb-2 shrink-0">Select content to use for context:</p>
+                        <div id="content-indexes-container" class="flex-grow overflow-y-auto border rounded-md p-2 bg-white max-h-90">
                             {% if indexes %}
-                                {% for index in indexes %}                                <div class="flex items-center mb-1">
+                                {% for index in indexes %}                                
+                                <div class="flex items-center mb-1">
                                     <input type="checkbox" 
                                            id="content-{{ index.id }}" 
                                            value="{{ index.id }}"
@@ -74,13 +75,13 @@
                                 </p>
                             {% endif %}
                         </div>
-                        <button id="refresh-indexes" class=" hidden mt-2 text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200">
+                        <button id="refresh-indexes" class=" hidden mt-2 text-xs px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded border border-blue-200 shrink-0">
                             Refresh available indexes
                         </button>
                     </div>
                 </div>
             </div>            <!-- Main chat container (will resize when content panel opens) -->
-            <div class="grow">
+            <div class="grow max-w-full transition-all duration-300 ease-in-out">
                 <!-- Chat Container -->
                 <div id="chat-container" class="border rounded-lg p-4 mb-4 overflow-y-auto bg-gray-50 min-h-[450px] max-h-[450px]">
                     <!-- Initial messages if any -->
@@ -146,7 +147,7 @@
                                     <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transform peer-checked:translate-x-4"></div>
                                 </div>
                                 
-                                <div id="send-loading" class="loading-indicator mr-2" style="display: none;">
+                                <div id="send-loading" class="loading-indicator mr-2 hidden">
                                     <div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
                                 </div>
                                 <button id="send-button" 
@@ -167,7 +168,7 @@
 
         <!-- Error toast -->
         <div id="error-toast" 
-             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg opacity-0 pointer-events-none z-50">
+             class="fixed bottom-4 right-4 bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg opacity-0 pointer-events-none z-50 transition-opacity duration-300 ease-in-out">
             <div class="flex items-center">
                 <div class="shrink-0">
                     <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -204,6 +205,8 @@
             const chatbotModeSelect = document.getElementById('chatbot-mode');
             const chatForm = document.getElementById('chat-form');
             const sendLoading = document.getElementById('send-loading');
+            const mainChatArea = document.querySelector('.grow'); // Get the main chat area
+            const errorToast = document.getElementById('error-toast');
             
             // Advanced settings elements
             const creativitySlider = document.getElementById('creativity');
@@ -275,7 +278,7 @@
                 // --- Validation End ---
 
                 // Show the loading indicator immediately
-                sendLoading.style.display = 'block';
+                sendLoading.classList.remove('hidden');
                 
                 // Create message object and add to history
                 const userMessage = {
@@ -385,12 +388,12 @@
                     }
                     
                     // Hide loading indicator
-                    sendLoading.style.display = 'none';
+                    sendLoading.classList.add('hidden');
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     // Hide loading indicator
-                    sendLoading.style.display = 'none';
+                    sendLoading.classList.add('hidden');
                     // Show error message
                     showError('Error sending message. Please try again.');
                     // Remove the loading placeholder
@@ -421,7 +424,7 @@
                 // not for character counting requests
                 if (!event.detail.path.includes('check-message-length')) {
                     // Make sure loading indicator is visible
-                    sendLoading.style.display = 'block';
+                    sendLoading.classList.remove('hidden');
                 }
             });
             
@@ -429,7 +432,7 @@
             document.body.addEventListener('htmx:afterSwap', function(event) {
                 if (event.detail.target.id === 'chat-container') {
                     // Hide loading indicator
-                    sendLoading.style.display = 'none';
+                    sendLoading.classList.add('hidden');
                     
                     // Process markdown in new AI responses
                     const lastMessage = event.detail.target.lastElementChild;
@@ -446,7 +449,7 @@
             
             // Also handle errors
             document.body.addEventListener('htmx:responseError', function(event) {
-                sendLoading.style.display = 'none';
+                sendLoading.classList.add('hidden');
             });
             
             // Update form target when chatbot mode changes
@@ -486,15 +489,17 @@
             // Function to handle toggling advanced options
             function toggleAdvancedOptions() {
                 if (useContent.checked) {
-                    // Show the advanced settings panel
-                    contentOptions.style.width = '300px';
-                    contentOptions.style.height = 'auto';
-                    document.querySelector('.grow').style.maxWidth = 'calc(100% - 320px)';
+                    // Show the advanced settings panel using Tailwind classes
+                    contentOptions.classList.remove('w-0', 'h-0');
+                    contentOptions.classList.add('w-[300px]', 'h-auto');
+                    mainChatArea.classList.remove('max-w-full');
+                    mainChatArea.classList.add('max-w-[calc(100%-320px)]');
                 } else {
-                    // Hide the advanced settings panel
-                    contentOptions.style.width = '0';
-                    contentOptions.style.height = '0';
-                    document.querySelector('.grow').style.maxWidth = '100%';
+                    // Hide the advanced settings panel using Tailwind classes
+                    contentOptions.classList.remove('w-[300px]', 'h-auto');
+                    contentOptions.classList.add('w-0', 'h-0');
+                    mainChatArea.classList.remove('max-w-[calc(100%-320px)]');
+                    mainChatArea.classList.add('max-w-full');
                 }
                 useContentInput.value = useContent.checked;
             }
@@ -613,16 +618,15 @@
             
             // Show error message
             function showError(message) {
-                const errorToast = document.getElementById('error-toast');
                 const errorMessage = document.getElementById('error-message');
                 errorMessage.textContent = message;
-                // Make toast visible and interactive
-                errorToast.style.opacity = '1';
-                errorToast.style.pointerEvents = 'auto'; 
+                // Make toast visible and interactive using Tailwind classes
+                errorToast.classList.remove('opacity-0', 'pointer-events-none');
+                errorToast.classList.add('opacity-100', 'pointer-events-auto'); 
                 // Hide the toast after 5 seconds
                 setTimeout(() => {
-                    errorToast.style.opacity = '0';
-                    errorToast.style.pointerEvents = 'none';
+                    errorToast.classList.remove('opacity-100', 'pointer-events-auto');
+                    errorToast.classList.add('opacity-0', 'pointer-events-none');
                 }, 5000);
             }
             
