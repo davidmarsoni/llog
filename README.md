@@ -62,19 +62,31 @@ python -c 'import secrets; print(secrets.token_hex(16))'
 
 The `GCS_BUCKET_NAME` is the name of the Google Cloud Storage bucket where the files will be stored. You can create a new bucket by following the instructions [here](https://cloud.google.com/storage/docs/creating-buckets).
 
+To have more information about how to create google buket see the folowing section of our wiki :
+
+[Intatallation page - Llog wiki](https://github.com/davidmarsoni/Llog/wiki/Installation#bucket-create-a-google-cloud-storage-bucket)
+
 #### Google Cloud Service Account
 
 The `GOOGLE_APPLICATION_CREDENTIALS` is the path to the service account key file. You can create a new service account by following the instructions [here](https://developers.google.com/workspace/guides/create-credentials#create_credentials_for_a_service_account).
+
+To have more information about how to create a service account see the following section of our wiki :
+
+[Intatallation page - Llog wiki](https://github.com/davidmarsoni/Llog/wiki/Installation#key-create-a-service-account)
 
 #### Notion integration token
 
 The `NOTION_INTEGRATION_TOKEN` is the token used to access the Notion API. You can create a new integration by following the instructions [here](https://developers.notion.com/docs/getting-started#step-1-create-an-integration).
 
-#### OpenAI
+To have more information about how to create a Notion integration see the following section of our wiki :
+
+[Intatallation page - Llog wiki](https://github.com/davidmarsoni/Llog/wiki/Installation#key-create-a-service-account)
+
+#### OpenAI API key
 
 The `OPENAI_API_KEY` is the token used to access the OpenAI API. You can create a new API key by following the instructions [here](https://platform.openai.com/docs/api-reference/authentication).
 
-#### Tavily
+#### Tavily API key
 
 The `TAVILY_API_KEY` is the token used to access the Tavily API. You can create a new API key by following the instructions [here](https://docs.tavily.com/documentation/quickstart).
 
