@@ -102,6 +102,7 @@
     --color-border: hsl(var(--border));
     --color-background: hsl(var(--background));
     --color-foreground: hsl(var(--foreground));
+    --color-primary: hsl(var(--primary));
   }
 }
 @layer base {
@@ -499,11 +500,8 @@
   .h-6 {
     height: calc(var(--spacing) * 6);
   }
-  .h-9 {
-    height: calc(var(--spacing) * 9);
-  }
-  .h-9\/10 {
-    height: calc(9/10 * 100%);
+  .h-8 {
+    height: calc(var(--spacing) * 8);
   }
   .h-10 {
     height: calc(var(--spacing) * 10);
@@ -528,9 +526,6 @@
   }
   .max-h-\[450px\] {
     max-height: 450px;
-  }
-  .max-h-\[500px\] {
-    max-height: 500px;
   }
   .max-h-\[900px\] {
     max-height: 900px;
@@ -925,6 +920,9 @@
   .bg-indigo-100 {
     background-color: var(--color-indigo-100);
   }
+  .bg-primary {
+    background-color: var(--color-primary);
+  }
   .bg-purple-100 {
     background-color: var(--color-purple-100);
   }
@@ -1293,11 +1291,6 @@
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
     transition-duration: var(--tw-duration, var(--default-transition-duration));
   }
-  .transition-opacity {
-    transition-property: opacity;
-    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
-    transition-duration: var(--tw-duration, var(--default-transition-duration));
-  }
   .transition-shadow {
     transition-property: box-shadow;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
@@ -1311,10 +1304,6 @@
   .duration-150 {
     --tw-duration: 150ms;
     transition-duration: 150ms;
-  }
-  .duration-200 {
-    --tw-duration: 200ms;
-    transition-duration: 200ms;
   }
   .duration-300 {
     --tw-duration: 300ms;
@@ -1334,9 +1323,6 @@
   }
   .duration-150 {
     animation-duration: 150ms;
-  }
-  .duration-200 {
-    animation-duration: 200ms;
   }
   .duration-300 {
     animation-duration: 300ms;
@@ -1435,6 +1421,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-indigo-100);
+      }
+    }
+  }
+  .hover\:bg-primary {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-primary);
       }
     }
   }
@@ -1736,7 +1729,7 @@
     --card-foreground: 222 14% 15%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 14% 15%;
-    --primary: 220 13% 28%;
+    --primary: 179 100% 45%;
     --primary-foreground: 0 0% 98%;
     --secondary: 220 13% 94%;
     --secondary-foreground: 220 13% 28%;
