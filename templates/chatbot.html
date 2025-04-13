@@ -91,7 +91,7 @@
                                 <div class="font-bold {% if message.role == 'user' %}text-green-600 text-right{% else %}text-blue-600{% endif %} mb-1">
                                     {{ 'You' if message.role == 'user' else 'AI Assistant' }}
                                 </div>
-                                <div class="{% if message.role == 'user' %}bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg{% else %}bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg{% endif %} p-3 text-gray-800 shadow-xs">
+                                <div class="{% if message.role == 'user' %}bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg break-words{% else %}bg-blue-100 markdown-content rounded-tr-lg rounded-bl-lg rounded-br-lg{% endif %} p-3 text-gray-800 shadow-xs">
                                     {% if message.role == 'user' %}
                                         {{ message.content }}
                                     {% else %}
@@ -250,31 +250,47 @@
                     return false;
                 }
 
-                if (useContent.checked) {
-                    // Validate Max Tokens
-                    const maxTokenValue = parseInt(maxTokenInput.value, 10);
-                    const minTokens = parseInt(maxTokenInput.min, 10);
-                    const maxTokens = parseInt(maxTokenInput.max, 10);
-                    if (isNaN(maxTokenValue) || maxTokenValue < minTokens || maxTokenValue > maxTokens) {
-                        showError(`Max Tokens must be a number between ${minTokens} and ${maxTokens}.`);
-                        maxTokenInput.focus(); // Focus the invalid field
+                // Validate Max Tokens
+                const maxTokenValue = parseInt(maxTokenInput.value, 10);
+                const minTokens = parseInt(maxTokenInput.min, 10);
+                const maxTokens = parseInt(maxTokenInput.max, 10);
+                if (isNaN(maxTokenValue) || maxTokenValue < minTokens || maxTokenValue > maxTokens) {
+                    showError(`Max Tokens must be a number between ${minTokens} and ${maxTokens}.`);
+                    maxTokenInput.focus(); // Focus the invalid field
+                    return false;
+                }
+
+                // Validate RAG selection if RAG is enabled
+                if (useRagCheckbox.checked) {
+                    const selectedIndexes = document.querySelectorAll('.content-index-checkbox:checked');
+                    if (selectedIndexes.length === 0) {
+                        showError('Please select at least one content index when Use RAG is enabled.');
+                        // Optionally focus the container or the first checkbox
+                        const firstCheckbox = document.querySelector('.content-index-checkbox');
+                        if (firstCheckbox) {
+                            firstCheckbox.focus();
+                        }
                         return false;
                     }
-
-                    // Validate RAG selection if RAG is enabled
-                    if (useRagCheckbox.checked) {
-                        const selectedIndexes = document.querySelectorAll('.content-index-checkbox:checked');
-                        if (selectedIndexes.length === 0) {
-                            showError('Please select at least one content index when Use RAG is enabled.');
-                            // Optionally focus the container or the first checkbox
-                            const firstCheckbox = document.querySelector('.content-index-checkbox');
-                            if (firstCheckbox) {
-                                firstCheckbox.focus();
-                            }
-                            return false;
-                        }
-                    }
                 }
+
+                // Validate Creativity
+                const creativityValue = parseFloat(creativityValueInput.value);
+                if (isNaN(creativityValue) || creativityValue < 0 || creativityValue > 2) {
+                    showError('Creativity must be a number between 0 and 2.');
+                    creativitySlider.focus(); // Focus the invalid field
+                    return false;
+                }
+
+                // Validate the request length
+                const requestLength = messageValue.length;
+                console.log(messageValue.length, messageValue);
+                if (requestLength > 2000) {
+                    showError('The total request length exceeds the maximum limit of 2000 characters.');
+                    messageInput.focus(); // Focus the invalid field
+                    return false;
+                }
+                
                 // --- Validation End ---
 
                 // Show the loading indicator immediately
@@ -297,7 +313,7 @@
                         <div class="font-bold text-green-600 text-right mb-1">
                             You
                         </div>
-                        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-xs">
+                        <div class="bg-green-100 rounded-tl-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 shadow-xs break-words">
                             ${escapeHtml(messageValue)}
                         </div>
                     </div>

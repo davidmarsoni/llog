@@ -11,7 +11,12 @@
 <!-- AI Response -->
 <div class="mb-4" id="{{ response_element_id|default('ai-response-placeholder') }}">
     <div class="max-w-[80%] w-fit">
-        <div class="font-bold text-blue-600 mb-1">AI Assistant</div>
-        <div class="bg-blue-100 rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 markdown-content">{{ ai_response }}</div>
+        {% if response_type == 'Error' %}
+            <div class="font-bold text-red-600 mb-1">Error</div>
+            <div class="bg-red-100 rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-red-800 markdown-content">{{ ai_response }}</div>
+        {% else %}
+            <div class="font-bold text-blue-600 mb-1">AI Assistant</div>
+            <div class="bg-blue-100 rounded-tr-lg rounded-bl-lg rounded-br-lg p-3 text-gray-800 markdown-content">{{ ai_response }}</div>
+        {% endif %}
     </div>
 </div>

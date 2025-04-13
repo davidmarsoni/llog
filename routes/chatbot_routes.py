@@ -63,18 +63,32 @@ def get_query_response():
             mode=mode,
             listOfIndexes=listOfIndexes
         )
+
+        # Set a type of response for processing
+        response_type = "AI"
         
         # Collect the generated response content
         response_content = ""
         for chunk in response_generator:
             if chunk:
                 response_content += chunk
+
+        # If the response is empty, set a default message
+        if not response_content in response_content:
+            response_content = "Sorry, I couldn't find an answer to your question. Please try again."
+        
+        # If the response is an error message, set it as the response content
+        if response_content.startswith("Error"):
+            response_content = f"There was an error processing your request: \n{response_content.split('Error:')[-1]}"
+            response_type = "Error"
+            
         
         # Return the complete response as JSON
         #return jsonify({"response": response_content})
         return render_template('components/chat_messages.html',
                              user_message=message,
                              ai_response=response_content,
+                             response_type=response_type,
                              ai_only=True,
                              response_element_id=1)  # Pass the response element ID to the template
         
@@ -122,15 +136,34 @@ def get_agent_response():
             )
         
         # Run the function in the event loop
-        response = loop.run_until_complete(run_async_function())
-        
+        response_generator = loop.run_until_complete(run_async_function())
+
+        # Collect the generated response content
+        response_content = ""
+        for chunk in response_generator:
+            if chunk:
+                response_content += chunk
+
+        # Set a type of response for processing
+        response_type = "AI"
+
+        # If the response is empty, set a default message
+        if not response_content:
+            response_content = "Sorry, I couldn't find an answer to your question. Please try again."
+
+        # If the response is an error message, set it as the response content
+        if response_content.startswith("Error"):
+            response_content = f"There was an error processing your request: {response_content.split('Error: \n')[-1]}"
+            response_type = "Error"
+
         # return the response as JSON
-        print("=== End of get_agent_response ===")
-        print(response)
+        print("=== End of get_agent_response ===") 
+        print(response_content)
         #return jsonify(response)
         return render_template('components/chat_messages.html',
                              user_message=message,
-                             ai_response=response,
+                             ai_response=response_content,
+                             response_type=response_type,
                              ai_only=True,
                              response_element_id=1)  # Pass the response element ID to the template
             
