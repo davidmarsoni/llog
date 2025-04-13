@@ -52,26 +52,43 @@ def get_query_response_full(message,lstMessageHistory,creativity,maxTokens,useRa
             listOfIndexes = list(set(listOfIndexes))
             current_app.logger.info(f"Using unique index IDs: {listOfIndexes}")
             context = getContext(query=message, listOfIndexes=listOfIndexes)
-        
-        # Create system prompt with context if provided
+
+        # Create system prompt
+        system_prompt = (
+            "You are a helpful AI assistant. Answer the user's question clearly and concisely. "
+            "Use Markdown formatting (like lists, bolding, or code blocks) when it improves readability. "
+            "Base your answer on the provided context and your general knowledge. "
+            "If asked about your sources, list the titles of the documents you used from the context, but NEVER show the raw context itself."
+        )
         if context:
-            system_prompt = f"""You are a helpful AI assistant. Use the following context 
-            to help answer the user's question, but also draw on your general knowledge when needed. 
-            If the context doesn't contain relevant information, just answer based on what you know.
-            
-            Context:
-            {context}"""
-        else:
-            system_prompt = "You are a helpful AI assistant."
-            
-        # Create messages lists
-        messages = [
-            ChatMessage(role=MessageRole.SYSTEM, content=system_prompt),
-            ChatMessage(role=MessageRole.USER, content=message)
-        ]
-        
+            system_prompt += f"\n\nUse the following context if relevant:\nContext:\n{context}"
+
+        # Create messages list starting with the system prompt
+        messages = [ChatMessage(role=MessageRole.SYSTEM, content=system_prompt)]
+
+        # Add message history
+        if lstMessageHistory:
+            for msg_str in lstMessageHistory:
+                try:
+                    msg_data = json.loads(msg_str)
+                    role = msg_data.get('role', '').lower()
+                    content = msg_data.get('content', '')
+                    if role == 'user':
+                        messages.append(ChatMessage(role=MessageRole.USER, content=content))
+                    elif role == 'assistant':
+                        messages.append(ChatMessage(role=MessageRole.ASSISTANT, content=content))
+                except json.JSONDecodeError:
+                    current_app.logger.warning(f"Could not parse message history item: {msg_str}")
+                    continue # Skip malformed history items
+                except Exception as e:
+                    current_app.logger.error(f"Error processing message history item: {e}")
+                    continue # Skip problematic history items
+
+        # Add the current user message
+        messages.append(ChatMessage(role=MessageRole.USER, content=message))
+
         response = llm.chat(messages)
-        
+
         yield response.message.content
             
     except Exception as e:

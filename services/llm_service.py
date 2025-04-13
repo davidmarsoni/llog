@@ -11,6 +11,7 @@ from services.llm import (
     get_content_metadata,
     get_recommender_system
 )
+from services.utils.cache import get_available_indexes as get_indexes 
 
 # Add a global flag to track loading state
 _cache_loading = False
@@ -28,7 +29,6 @@ def get_available_indexes(folder_path=None):
         return []
     try:
         _cache_loading = True
-        from services.llm.cache import get_available_indexes as get_indexes
         indexes = get_indexes(folder_path)
         return indexes if indexes is not None else []
     except Exception as e:

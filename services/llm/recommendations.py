@@ -3,7 +3,7 @@ Content recommendation functionality for LLM services
 """
 from flask import current_app
 from typing import Dict, Any
-from services.llm.cache import get_available_indexes
+from services.utils.cache import get_available_indexes 
 from services.llm.content import query_content
 
 def get_recommender_system(query: str = None, include_metadata: bool = True) -> Dict[str, Any]:

@@ -3,8 +3,8 @@ Contains routes for adding files to the LLM storage
 """
 from flask import Blueprint, request, redirect, url_for, flash, current_app
 import os
-from services.llm.cache import move_item_to_folder
 from .route_utils import add_cache_headers
+from services.utils.cache import move_item_to_folder
 
 file_add_bp = Blueprint('file_add', __name__, url_prefix='/files/add')
 

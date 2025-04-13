@@ -6,4 +6,8 @@ from services.document.pdf import process_pdf_file
 from services.document.text import process_text_file
 
 # Export all necessary functions
-__all__ = ['extract_auto_metadata', 'process_pdf_file', 'process_text_file']
+__all__ = [
+    'extract_auto_metadata', 
+    'process_pdf_file', 
+    'process_text_file'
+]

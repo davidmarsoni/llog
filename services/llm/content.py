@@ -5,7 +5,7 @@ from flask import current_app
 import os
 from typing import List, Dict, Any
 from services.notion_service import download_blob_to_memory
-from services.llm.cache import get_available_indexes
+from services.utils.cache import get_available_indexes 
 from services.storage_service import get_storage_client, get_file_metadata
 
 def _ensure_bucket_exists():
@@ -42,17 +42,6 @@ def get_content_metadata(index_id: str) -> Dict[str, Any]:
         current_app.logger.error(f"Error getting content metadata: {str(e)}")
         raise
 
-def _clean_id(index_id: str) -> str:
-    """Clean an ID by removing any potential prefixes."""
-    # Handle cases where the ID already contains a type prefix
-    if index_id.startswith('doc_'):
-        return index_id
-    if index_id.startswith('db_'):
-        return index_id
-    if index_id.startswith('page_'):
-        return index_id
-    return index_id
-
 def query_content(query: str, index_ids: List[str] = None, use_metadata_filtering: bool = False) -> Dict[str, Any]:
     """
     Query content across one or more indexes.
@@ -75,8 +64,7 @@ def query_content(query: str, index_ids: List[str] = None, use_metadata_filterin
         results = []
         for index_id in index_ids:
             try:
-                # Clean the ID to handle any prefixes
-                clean_id = _clean_id(index_id)
+                clean_id =index_id
                 current_app.logger.info(f"Querying content with ID: {clean_id}")
                 
                 # Try all possible vector index paths for this ID

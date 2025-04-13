@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, make_response
 from services.llm_service import get_available_indexes
-from services.llm.cache import get_folders
+from services.utils.cache import get_folders
 from .route_utils import add_cache_headers
 
 # Import sub-blueprints

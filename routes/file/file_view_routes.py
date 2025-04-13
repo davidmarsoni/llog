@@ -1,8 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, make_response
 import datetime
 from services.llm_service import get_available_indexes
-from services.llm.cache import get_folders, move_item_to_folder
+from services.utils.cache import get_folders, move_item_to_folder
 from .route_utils import add_cache_headers
+from services.storage_service import delete_file_from_storage
+from services.llm_service import get_available_indexes, refresh_file_index_cache
 
 file_view_bp = Blueprint('file_view', __name__, url_prefix='/files/view')
 
@@ -18,8 +20,7 @@ def delete_file(filename):
     The path parameter can handle slashes in the filename.
     """
     try:
-        from services.storage_service import delete_file_from_storage
-        from services.llm_service import get_available_indexes, refresh_file_index_cache
+    
         
         # Get current pagination and filter parameters to preserve after redirect
         page = request.args.get('page', 1, type=int)

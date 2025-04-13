@@ -1,12 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 import os
-import pickle
 
 from services.storage_service import get_file_metadata, update_file_metadata, get_storage_client
-from services.llm_service import refresh_file_index_cache
-from services.document_service import extract_auto_metadata
-from services.llm.cache import get_folders, move_item_to_folder
-from .route_utils import add_cache_headers
+from services.document_service import extract_auto_metadata 
+from services.utils.cache import get_folders, move_item_to_folder, refresh_file_index_cache 
+from .route_utils import add_cache_headers 
 
 metadata_bp = Blueprint('file_metadata', __name__, url_prefix='/files/metadata')
 

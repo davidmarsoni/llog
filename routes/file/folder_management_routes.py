@@ -1,7 +1,6 @@
 from flask import Blueprint, request, redirect, url_for, flash, current_app, jsonify
-from services.llm.cache import get_folders, create_folder, rename_folder, delete_folder
-from .route_utils import add_cache_headers
-
+from services.utils.cache import get_folders, create_folder, rename_folder, delete_folder,_sync_reload_folder_cache
+from .route_utils import add_cache_headers 
 folder_bp = Blueprint('folder_management', __name__, url_prefix='/files/folders')
 
 @folder_bp.after_request
@@ -28,7 +27,7 @@ def create_folder_route():
             # Create the folder and force a complete refresh of the cache
             create_folder(folder_name, parent_path)
             # Explicitly reload the folder cache to immediately show the new folder
-            from services.llm.cache import _sync_reload_folder_cache
+            
             _sync_reload_folder_cache()
             flash(f"Folder '{folder_name}' created successfully!")
             
@@ -147,3 +146,15 @@ def delete_folder_route():
                              per_page=per_page,
                              title=filter_title,
                              type=filter_type))
+
+@folder_bp.route('/folders/refresh', methods=['POST'])
+def refresh_folders():
+    """Endpoint to force refresh the folder cache"""
+    try:
+        # Import the sync function directly for this specific use case
+        from services.utils.cache import _sync_reload_folder_cache # Updated import path
+        _sync_reload_folder_cache()
+        return jsonify({"message": "Folder cache refreshed successfully"}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error refreshing folder cache: {str(e)}")
+        return jsonify({"error": str(e)}), 500

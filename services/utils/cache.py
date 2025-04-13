@@ -114,62 +114,6 @@ def _is_folder_cache_valid():
 # Store app reference for background threads
 _app_ref = None
 
-# Async reload function to be run in a separate thread
-def _async_reload_cache():
-    """Asynchronously reload the file index cache"""
-    if _file_index_cache['is_loading']:
-        background_logger.debug("Cache reload already in progress")
-        return
-        
-    try:
-        _file_index_cache['is_loading'] = True
-        background_logger.info("Starting async reload of file index cache")
-        
-        global _app_ref
-        if not _app_ref:
-            background_logger.error("No Flask app reference available for background thread")
-            return
-            
-        # Create an app context for this background thread
-        with _app_ref.app_context():
-            # Get GCS client and bucket
-            client = get_storage_client()
-            bucket_name = os.getenv("GCS_BUCKET_NAME") or _app_ref.config.get('GCS_BUCKET_NAME')
-            bucket = client.bucket(bucket_name)
-            
-            # List blobs with cache/ prefix - only using standardized formats
-            vector_blobs = list(bucket.list_blobs(prefix="cache/vector_index_"))
-            metadata_blobs = list(bucket.list_blobs(prefix="cache/metadata_"))
-            
-            # Create a dictionary of metadata by ID
-            metadata_dict = {}
-            for blob in metadata_blobs:
-                try:
-                    # Extract ID from the blob name using only standardized format
-                    blob_name = blob.name
-                    item_id = blob_name.split("metadata_")[1].replace('.pkl', '')
-                    metadata = download_blob_to_memory(blob_name)
-                    metadata_dict[item_id] = metadata
-                except Exception as e:
-                    current_app.logger.error(f"Error processing metadata blob {blob_name}: {str(e)}")
-                    continue
-            
-            indexes = []
-            for blob in vector_blobs:
-                index_info = _process_vector_blob(blob.name, metadata_dict)
-                if index_info:
-                    indexes.append(index_info)
-            
-            # Update cache with new data
-            _file_index_cache['data'] = indexes
-            _file_index_cache['timestamp'] = time.time()
-            current_app.logger.info(f"Async file index cache update completed with {len(indexes)} items")
-        
-    except Exception as e:
-        background_logger.error(f"Error in async cache reload: {str(e)}")
-    finally:
-        _file_index_cache['is_loading'] = False
-
 # The synchronous version of the reload cache function
 def _sync_reload_cache():
     """Synchronously reload the file index cache"""
