@@ -7,7 +7,6 @@ from google.cloud import storage
 import os
 import io
 import pickle
-import time
 
 def get_storage_client():
     """Get a Google Cloud Storage client."""

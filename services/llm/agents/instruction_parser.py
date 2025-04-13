@@ -1,8 +1,8 @@
 """
 Simple instruction parser using LLM to detect requirements in prompts.
 """
-from services.llm.agents.utils import llm
 import logging
+from services.llm.agents.utils import llm
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)

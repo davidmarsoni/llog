@@ -3,6 +3,7 @@ LLM chat interaction functionality using LlamaIndex
 """
 import json
 import os
+import traceback
 from flask import current_app
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.llms.openai import OpenAI
@@ -209,7 +210,6 @@ async def get_agent_response_full(message,lstMessageHistory,creativity,modules,m
         
         return final_result
     except Exception as e:
-        import traceback
         print(f"Error in agent workflow: {str(e)}")
         print(traceback.format_exc())
         return {"error": str(e)}

@@ -1,6 +1,7 @@
+import os
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
-import os
+
 
 load_dotenv()
 

@@ -1,9 +1,6 @@
 from llama_index.core.agent import FunctionCallingAgent as GenericFunctionCallingAgent
-from llama_index.core.tools import FunctionTool
 from services.llm.agents.utils import llm
-from tavily import AsyncTavilyClient 
 from dotenv import load_dotenv
-import os
 
 # Load environment variables from .env file
 load_dotenv()

@@ -1,7 +1,7 @@
+import re
 from llama_index.core.agent import FunctionCallingAgent as GenericFunctionCallingAgent
 from llama_index.core.tools import FunctionTool
 from services.llm.agents.utils import llm
-import re
 
 # Define review functions
 def check_context_preservation(original_prompt: str, research_info: str, answer: str) -> str:

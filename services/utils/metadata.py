@@ -3,7 +3,11 @@ Metadata extraction functionality for documents
 """
 import os
 import json
+import httpx
+import re
 from flask import current_app
+from openai import OpenAI
+   
 
 def extract_auto_metadata(text_content):
     """
@@ -22,10 +26,6 @@ def extract_auto_metadata(text_content):
                 "entities": [],
                 "keywords": []
             }
-            
-        # Import here to avoid dependency issues if OpenAI is not available
-        from openai import OpenAI
-        import httpx
         
         # Create OpenAI client
         client = OpenAI(
@@ -73,7 +73,6 @@ def extract_auto_metadata(text_content):
         except json.JSONDecodeError:
             # If that fails, try to find JSON within the text
             try:
-                import re
                 json_match = re.search(r'\{[\s\S]*\}', result_text)
                 if json_match:
                     metadata = json.loads(json_match.group(0))

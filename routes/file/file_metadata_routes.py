@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 import os
+import pickle 
 import tempfile
-import pickle # Added import
-
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
+from llama_index.readers.file import PDFReader
 from services.storage_service import get_file_metadata, update_file_metadata, get_storage_client
 from services.utils.metadata import extract_auto_metadata 
 from services.utils.cache import get_folders, move_item_to_folder, refresh_file_index_cache 
@@ -188,10 +188,6 @@ def generate_metadata(file_id):
                     content_path = pdf_path
                     
                     # For PDF, download to temp file and extract text
-                    import tempfile
-                    import io
-                    from llama_index.readers.file import PDFReader
-                    
                     with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
                         temp_file_path = temp_file.name
                         blob.download_to_filename(temp_file_path)

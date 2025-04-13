@@ -1,11 +1,12 @@
+import os
 from llama_index.core.agent import FunctionCallingAgent as GenericFunctionCallingAgent
 from llama_index.core.tools import FunctionTool
 from services.llm.agents.utils import llm
 from tavily import AsyncTavilyClient 
 from dotenv import load_dotenv
-import os
-
 from services.llm.content import get_content_metadata
+from services.notion_service import download_blob_to_memory
+from services.storage_service import get_storage_client
 
 # Load environment variables from .env file
 load_dotenv()
@@ -175,12 +176,6 @@ async def search_best_context(
     print(f"[CONTEXT SEARCH] Searching through {len(index_ids)} indexes: {index_ids}")
     
     results = []
-    
-    # For each index, perform a semantic search
-    from services.llm.content import get_content_metadata
-    from services.notion_service import download_blob_to_memory
-    from services.storage_service import get_storage_client
-    import os
     
     for index_id in index_ids:
         try:

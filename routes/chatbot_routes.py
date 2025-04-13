@@ -1,11 +1,12 @@
 """
 Chatbot routes for the application
 """
+import asyncio
+import nest_asyncio
 from flask import Blueprint, render_template, request, jsonify, current_app, make_response, Response, stream_with_context, session
 from services.llm_service import get_available_indexes
 from services.llm.chat import get_query_response_full, get_agent_response_full
-import json
-
+    
 # Create a Blueprint for chatbot routes
 chatbot_bp = Blueprint('chatbot', __name__, url_prefix='/chatbot')
 
@@ -95,10 +96,7 @@ def get_agent_response():
         listOfIndexes = request.form.getlist('listOfIndexes[]')
         
         print(f"DEBUG get_agent_response : Message: {message},lstMessageHistory: {lstMessageHistory}, creativity: {creativity}, maxTokens: {maxTokens}, useRag: {useRag}, modules: {modules}, mode: {mode}, listOfIndexes: {listOfIndexes}")
-         
-        import asyncio
-        import nest_asyncio
-        
+
         # Apply nest_asyncio to allow nested event loops
         nest_asyncio.apply()
         

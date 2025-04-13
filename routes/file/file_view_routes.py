@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, make_response
 import datetime
-from services.llm_service import get_available_indexes
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify, make_response
 from services.utils.cache import get_folders, move_item_to_folder
 from .route_utils import add_cache_headers
 from services.storage_service import delete_file_from_storage
-from services.llm_service import get_available_indexes, refresh_file_index_cache
+from services.llm_service import get_available_indexes, refresh_file_index_cache, refresh_file_index_cache,is_cache_loading 
+from services.notion_service import cache_notion_page,cache_notion_database
+
 
 file_view_bp = Blueprint('file_view', __name__, url_prefix='/files/view')
 
@@ -109,8 +110,6 @@ def list_cached_content():
 def refresh_cache():
     """Force a refresh of the file index cache."""
     try:
-        from services.llm_service import refresh_file_index_cache
-        
         # Get current pagination and filter parameters to preserve after redirect
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
@@ -161,12 +160,10 @@ def refresh_item():
         current_app.logger.info(f"Refreshing {item_type} with ID: {item_notion_id} (UUID: {item_id})")
         
         if item_type == 'page':
-            from services.notion_service import cache_notion_page
             result = cache_notion_page(item_notion_id, custom_name, item_id)
             success_message = f"Successfully refreshed Notion page '{result['title']}' with {result['chunks']} content chunks!"
             flash(success_message)
         elif item_type == 'database':
-            from services.notion_service import cache_notion_database
             result = cache_notion_database(item_notion_id, custom_name, item_id)
             success_message = f"Successfully refreshed Notion database '{result['title']}' with {result['pages_found']} pages!"
             flash(success_message)
@@ -175,7 +172,6 @@ def refresh_item():
             flash(error_message)
             return redirect(url_for('file_storage.view_files'))
         
-        from services.llm_service import refresh_file_index_cache
         refresh_file_index_cache()  # Refresh cache after updating content
         
     except Exception as e:
@@ -231,7 +227,6 @@ def move_item():
         flash(f"Item moved successfully to {'Root' if not folder_path else folder_path}")
         
         # Force a refresh of the cache to ensure we have the latest data
-        from services.llm_service import refresh_file_index_cache
         refresh_file_index_cache()
         
         # For HTMX requests, return the updated content table
@@ -369,8 +364,6 @@ def filtered_content():
 def check_content_loading():
     """Check if content is still loading."""
     try:
-        from services.llm_service import is_cache_loading
-        
         is_loading = is_cache_loading()
         
         response = make_response(jsonify({

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, redirect, url_for, flash, current_app, jsonify
 from services.utils.cache import get_folders, create_folder, rename_folder, delete_folder,_sync_reload_folder_cache
 from .route_utils import add_cache_headers 
+
 folder_bp = Blueprint('folder_management', __name__, url_prefix='/files/folders')
 
 @folder_bp.after_request
@@ -151,8 +152,6 @@ def delete_folder_route():
 def refresh_folders():
     """Endpoint to force refresh the folder cache"""
     try:
-        # Import the sync function directly for this specific use case
-        from services.utils.cache import _sync_reload_folder_cache # Updated import path
         _sync_reload_folder_cache()
         return jsonify({"message": "Folder cache refreshed successfully"}), 200
     except Exception as e:

@@ -6,9 +6,9 @@ import io
 import pickle
 import time
 import tempfile
-import uuid
+
 from flask import current_app
-from llama_index.core import Document, VectorStoreIndex
+from llama_index.core import VectorStoreIndex
 from llama_index.core.node_parser.text.token import TokenTextSplitter
 from llama_index.readers.file import PDFReader
 from services.storage_service import generate_uuid, get_storage_client

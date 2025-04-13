@@ -1,8 +1,8 @@
 """
 Content retrieval and querying functionality for LLM services
 """
-from flask import current_app
 import os
+from flask import current_app
 from typing import List, Dict, Any
 from services.notion_service import download_blob_to_memory
 from services.utils.cache import get_available_indexes 

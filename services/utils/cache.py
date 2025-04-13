@@ -1,18 +1,17 @@
 """
 Cache management for LLM service components
 """
-from flask import current_app
+import io
 import os
 import time
-import threading
 import logging
-from typing import List, Dict, Any
-from services.storage_service import get_storage_client
-from services.notion_service import download_blob_to_memory
-import io
 import pickle
 import json
-import os.path
+from flask import current_app
+from typing import Dict, Any
+from services.storage_service import get_storage_client
+from services.notion_service import download_blob_to_memory
+
 
 # Configure logging for background tasks that can't access Flask's logger
 background_logger = logging.getLogger('background_cache')
@@ -301,8 +300,6 @@ def _update_item_metadata(item_id: str, metadata_update: Dict):
         metadata.update(metadata_update)
         
         # Save updated metadata
-        import pickle
-        import io
         with io.BytesIO() as file_buffer:
             pickle.dump(metadata, file_buffer)
             file_buffer.seek(0)

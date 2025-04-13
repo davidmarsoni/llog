@@ -1,10 +1,14 @@
 """
 Contains routes for adding files to the LLM storage
 """
-from flask import Blueprint, request, redirect, url_for, flash, current_app
 import os
+from flask import Blueprint, request, redirect, url_for, flash, current_app
 from .route_utils import add_cache_headers
 from services.utils.cache import move_item_to_folder
+from services.document_service import process_text_file,process_pdf_file
+from services.llm_service import refresh_file_index_cache
+from services.notion_service import cache_notion_page, cache_notion_database, get_notion_client
+
 
 file_add_bp = Blueprint('file_add', __name__, url_prefix='/files/add')
 
@@ -52,9 +56,6 @@ def upload_document():
         file_ext = file_ext.lower()
         
         if file_ext == '.pdf':
-            from services.document_service import process_pdf_file
-            from services.llm_service import refresh_file_index_cache
-            
             result = process_pdf_file(file, file.filename, custom_name)
             
             # Update metadata with folder information if specified
@@ -67,9 +68,6 @@ def upload_document():
             refresh_file_index_cache()  # Refresh cache after adding content
             flash(f"Successfully cached PDF '{result['title']}' with {result['chunks']} content chunks!")
         elif file_ext in ['.txt', '.md']:
-            from services.document_service import process_text_file
-            from services.llm_service import refresh_file_index_cache
-            
             result = process_text_file(file, file.filename, custom_name)
             
             # Update metadata with folder information if specified
@@ -120,8 +118,6 @@ def cache_notion_page():
                            folder=folder_path)
     
     try:
-        from services.notion_service import cache_notion_page, cache_notion_database, get_notion_client
-        from services.llm_service import refresh_file_index_cache
         notion = get_notion_client()
         
         # CASE 1: Database ID is provided - process it directly

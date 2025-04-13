@@ -1,5 +1,6 @@
+import traceback
+import logging
 from llama_index.core.workflow import Context
-from llama_index.llms.openai import OpenAI
 from llama_index.core.workflow import (
     StartEvent,
     StopEvent,
@@ -9,14 +10,10 @@ from llama_index.core.workflow import (
 from services.llm.agents.events import (
     QueryEvent,
     ReviewEvent,
-    RewriteEvent,
     WriteEvent,
 )
 from services.llm.agents.utils import llm
-from llama_index.core.llms import ChatMessage, MessageRole
-import traceback
-import logging
-import json
+from services.llm.agents.instruction_parser import analyze_prompt_requirements
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -113,9 +110,6 @@ class MainAgentWorflow(Workflow):
             if is_pre_write:
                 logger.info("This is a PRE-WRITE review to guide the writing process")
                 
-                # Use LLM to detect special instructions in the prompt in any language
-                from services.llm.agents.instruction_parser import analyze_prompt_requirements
-                
                 # Get all requirements in one simple call (no await as it's not async)
                 requirements = analyze_prompt_requirements(original_prompt)
                 word_count_instruction = requirements.get('word_count_instruction')
@@ -165,9 +159,6 @@ class MainAgentWorflow(Workflow):
                 
                 # Log the current rewrite count for debugging
                 logger.info(f"Current rewrite count: {rewrite_count}")
-                
-                # Use LLM to detect special instructions in the prompt in any language
-                from services.llm.agents.instruction_parser import analyze_prompt_requirements
                 
                 # Get all requirements
                 requirements = analyze_prompt_requirements(original_prompt)
