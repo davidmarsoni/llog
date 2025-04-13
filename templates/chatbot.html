@@ -241,11 +241,39 @@
                 // Get the message value
                 const messageValue = messageInput.value.trim();
                 
-                // Don't proceed if empty
+                // --- Validation Start ---
                 if (!messageValue) {
+                    showError('Please enter a message.');
                     return false;
                 }
-                
+
+                if (useContent.checked) {
+                    // Validate Max Tokens
+                    const maxTokenValue = parseInt(maxTokenInput.value, 10);
+                    const minTokens = parseInt(maxTokenInput.min, 10);
+                    const maxTokens = parseInt(maxTokenInput.max, 10);
+                    if (isNaN(maxTokenValue) || maxTokenValue < minTokens || maxTokenValue > maxTokens) {
+                        showError(`Max Tokens must be a number between ${minTokens} and ${maxTokens}.`);
+                        maxTokenInput.focus(); // Focus the invalid field
+                        return false;
+                    }
+
+                    // Validate RAG selection if RAG is enabled
+                    if (useRagCheckbox.checked) {
+                        const selectedIndexes = document.querySelectorAll('.content-index-checkbox:checked');
+                        if (selectedIndexes.length === 0) {
+                            showError('Please select at least one content index when Use RAG is enabled.');
+                            // Optionally focus the container or the first checkbox
+                            const firstCheckbox = document.querySelector('.content-index-checkbox');
+                            if (firstCheckbox) {
+                                firstCheckbox.focus();
+                            }
+                            return false;
+                        }
+                    }
+                }
+                // --- Validation End ---
+
                 // Show the loading indicator immediately
                 sendLoading.style.display = 'block';
                 
@@ -588,9 +616,13 @@
                 const errorToast = document.getElementById('error-toast');
                 const errorMessage = document.getElementById('error-message');
                 errorMessage.textContent = message;
+                // Make toast visible and interactive
                 errorToast.style.opacity = '1';
+                errorToast.style.pointerEvents = 'auto'; 
+                // Hide the toast after 5 seconds
                 setTimeout(() => {
                     errorToast.style.opacity = '0';
+                    errorToast.style.pointerEvents = 'none';
                 }, 5000);
             }
             
