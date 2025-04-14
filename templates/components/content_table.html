@@ -177,7 +177,7 @@
                                         </button>
                                     </form>
                                 {% endif %}
-                                <form action="{{ url_for('file_view.delete_file', filename=item.id, page=page, per_page=per_page, title=filter_title, type=filter_type, folder=current_folder) }}" method="post" class="inline delete-form" data-title="{{ item.title }}">
+                                <form action="{{ url_for('file_view.delete_file', file_id=item.id, page=page, per_page=per_page, title=filter_title, type=filter_type, folder=current_folder) }}" method="post" class="inline delete-form" data-title="{{ item.title }}">
                                     <div class="delete-button-group inline-flex rounded-md shadow-xs">
                                         <button type="button" class="inline-flex items-center px-2.5 py-1.5 border border-red-300 text-sm leading-5 font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 hover:text-red-800 focus:outline-hidden focus:border-red-400 focus:shadow-outline-red transition ease-in-out duration-150 delete-btn">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
