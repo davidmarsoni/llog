@@ -21,7 +21,7 @@
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <span class="text-xs text-gray-500 ml-2">High</span>
                             </div>
-                            <input type="hidden" name="creativity_value" id="temperature-value" value="2">
+                            <input type="hidden" name="temperature_value" id="temperature-value" value="1">
                         </div>
                         
                         <!-- Max Tokens -->
@@ -206,8 +206,8 @@
             const errorToast = document.getElementById('error-toast');
             
             // Advanced settings elements
-            const creativitySlider = document.getElementById('temperature');
-            const creativityValueInput = document.getElementById('temperature-value');
+            const temperatureSlider = document.getElementById('temperature');
+            const temperatureValueInput = document.getElementById('temperature-value');
             const maxTokenInput = document.getElementById('maxToken');
             const modulesSelect = document.getElementById('modules');
             const useRagCheckbox = document.getElementById('useRag');
@@ -227,8 +227,8 @@
                });
             
             // Update temperature value when slider changes
-            creativitySlider.addEventListener('input', function() {
-                creativityValueInput.value = this.value;
+            temperatureSlider.addEventListener('input', function() {
+                temperatureValueInput.value = this.value;
             });
               // Initialize message history tracker
             let messageHistory = [];
@@ -272,10 +272,10 @@
                 }
 
                 // Validate Temperature
-                const creativityValue = parseFloat(creativityValueInput.value);
-                if (isNaN(creativityValue) || creativityValue < 0 || creativityValue > 2) {
+                const temperatureValue = parseFloat(temperatureValueInput.value);
+                if (isNaN(temperatureValue) || temperatureValue < 0 || temperatureValue > 2) {
                     showError('Temperature must be a number between 0 and 2.');
-                    creativitySlider.focus(); // Focus the invalid field
+                    temperatureSlider.focus(); // Focus the invalid field
                     return false;
                 }
 
