@@ -149,11 +149,10 @@ def get_agent_response():
 
         # If the response is empty, set a default message
         if not response_content:
-            response_content = "Sorry, I couldn't find an answer to your question. Please try again."
-
-        # If the response is an error message, set it as the response content
+            response_content = "Sorry, I couldn't find an answer to your question. Please try again."        # If the response is an error message, set it as the response content
         if response_content.startswith("Error"):
-            response_content = f"There was an error processing your request: {response_content.split('Error: \n')[-1]}"
+            error_parts = response_content.split('Error: ')
+            response_content = f"There was an error processing your request: {error_parts[-1] if len(error_parts) > 1 else error_parts[0]}"
             response_type = "Error"
 
         # return the response as JSON
