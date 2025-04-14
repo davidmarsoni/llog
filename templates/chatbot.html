@@ -12,16 +12,16 @@
                     <div class="mb-4">
                         <h3 class="font-semibold text-gray-700 mb-2">Advanced Settings</h3>
                         
-                        <!-- Creativity Slider -->
+                        <!-- Temperature Slider -->
                         <div class="mb-4">
-                            <label for="creativity" class="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
+                            <label for="temperature" class="block text-sm font-medium text-gray-700 mb-1">Temperature</label>
                             <div class="flex items-center">
                                 <span class="text-xs text-gray-500 mr-2">Low</span>
-                                <input type="range" id="creativity" name="creativity" min="0" max="2" value="1"  step="0.1"
+                                <input type="range" id="temperature" name="temperature" min="0" max="2" value="1"  step="0.1"
                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
                                 <span class="text-xs text-gray-500 ml-2">High</span>
                             </div>
-                            <input type="hidden" name="creativity_value" id="creativity-value" value="2">
+                            <input type="hidden" name="creativity_value" id="temperature-value" value="2">
                         </div>
                         
                         <!-- Max Tokens -->
@@ -38,7 +38,7 @@
                                 <option value="default">Default</option>
                                 <option value="summarization">Summarization</option>
                                 <option value="code">Code</option>
-                                <option value="creativity">Creativity</option>
+                                <option value="temperature">Temperature</option>
                             </select>
                         </div>
                         
@@ -209,8 +209,8 @@
             const errorToast = document.getElementById('error-toast');
             
             // Advanced settings elements
-            const creativitySlider = document.getElementById('creativity');
-            const creativityValueInput = document.getElementById('creativity-value');
+            const creativitySlider = document.getElementById('temperature');
+            const creativityValueInput = document.getElementById('temperature-value');
             const maxTokenInput = document.getElementById('maxToken');
             const modulesSelect = document.getElementById('modules');
             const useRagCheckbox = document.getElementById('useRag');
@@ -229,7 +229,7 @@
                 "walkTokens": null
                });
             
-            // Update creativity value when slider changes
+            // Update temperature value when slider changes
             creativitySlider.addEventListener('input', function() {
                 creativityValueInput.value = this.value;
             });
@@ -274,10 +274,10 @@
                     }
                 }
 
-                // Validate Creativity
+                // Validate Temperature
                 const creativityValue = parseFloat(creativityValueInput.value);
                 if (isNaN(creativityValue) || creativityValue < 0 || creativityValue > 2) {
-                    showError('Creativity must be a number between 0 and 2.');
+                    showError('Temperature must be a number between 0 and 2.');
                     creativitySlider.focus(); // Focus the invalid field
                     return false;
                 }
@@ -353,7 +353,7 @@
                 
                 if (useContent.checked) {
                     // Add advanced settings to form data
-                    formData.set('creativity', document.getElementById('creativity-value').value);
+                    formData.set('temperature', document.getElementById('temperature-value').value);
                     formData.set('maxToken', document.getElementById('maxToken').value);
                     formData.set('modules', document.getElementById('modules').value);
                     formData.set('useRag', document.getElementById('useRag').checked);

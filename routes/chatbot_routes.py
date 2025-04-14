@@ -47,7 +47,7 @@ def get_query_response():
     try:
         message = request.form.get('message', '').strip()
         lstMessageHistory = request.form.getlist('lstMessagesHistory[]')
-        creativity = request.form.get('creativity', '1')
+        temperature = request.form.get('temperature', '1')
         max_tokens = request.form.get('maxToken', '2000')
         useRag = request.form.get('useRag', 'false').lower() == 'true'
         mode = request.form.get('mode', 'files')
@@ -57,7 +57,7 @@ def get_query_response():
         response_generator = get_query_response_full(
             message = message,
             lstMessageHistory=lstMessageHistory,
-            creativity=creativity,
+            temperature=temperature,
             maxTokens=max_tokens,
             useRag=useRag,
             mode=mode,
@@ -102,14 +102,14 @@ def get_agent_response():
     try:
         message = request.form.get('message', '').strip()
         lstMessageHistory = request.form.getlist('lstMessagesHistory[]')
-        creativity = request.form.get('creativity', '1')
+        temperature = request.form.get('temperature', '1')
         maxTokens = request.form.get('maxToken', '2000')
         modules = request.form.get('modules', '')
         useRag = request.form.get('useRag', 'false').lower() == 'true'
         mode = request.form.get('mode', 'files')
         listOfIndexes = request.form.getlist('listOfIndexes[]')
         
-        print(f"DEBUG get_agent_response : Message: {message},lstMessageHistory: {lstMessageHistory}, creativity: {creativity}, maxTokens: {maxTokens}, useRag: {useRag}, modules: {modules}, mode: {mode}, listOfIndexes: {listOfIndexes}")
+        print(f"DEBUG get_agent_response : Message: {message},lstMessageHistory: {lstMessageHistory}, temperature: {temperature}, maxTokens: {maxTokens}, useRag: {useRag}, modules: {modules}, mode: {mode}, listOfIndexes: {listOfIndexes}")
 
         # Apply nest_asyncio to allow nested event loops
         nest_asyncio.apply()
@@ -127,7 +127,7 @@ def get_agent_response():
             return await get_agent_response_full(
                 message=message,
                 lstMessageHistory=lstMessageHistory,
-                creativity=creativity,
+                temperature=temperature,
                 maxTokens=maxTokens,
                 useRag=useRag,
                 modules=modules,

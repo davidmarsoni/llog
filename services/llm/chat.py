@@ -14,14 +14,14 @@ from services.llm.agents.main_agent_worflow import MainAgentWorflow
 from services.llm.agents.query_agent import query_agent
 from services.llm.content import query_content
  
-def get_query_response_full(message,lstMessageHistory,creativity,maxTokens,useRag,mode,listOfIndexes):
+def get_query_response_full(message,lstMessageHistory,temperature,maxTokens,useRag,mode,listOfIndexes):
     """
     Get a streaming response from the LLM using the provided parameters.
     
     Args:
         message (str): The user's query
         lstMessageHistory (list): List of previous chat messages
-        creativity (float): Model temperature setting (0.0 to 1.0)
+        temperature (float): Model temperature setting (0.0 to 1.0)
         maxToken (int): Maximum number of tokens for the response
         useRag (bool): Whether to use RAG for context
         mode (str): Mode of operation (e.g., "chat")
@@ -40,7 +40,7 @@ def get_query_response_full(message,lstMessageHistory,creativity,maxTokens,useRa
         # Initialize the OpenAI LLM
         llm = OpenAI(
             model="gpt-4o-mini",
-            temperature=creativity,
+            temperature=temperature,
             max_tokens=maxTokens,
             api_key=api_key
         )
@@ -60,6 +60,9 @@ def get_query_response_full(message,lstMessageHistory,creativity,maxTokens,useRa
             "Use Markdown formatting (like lists, bolding, or code blocks) when it improves readability. "
             "Base your answer on the provided context and your general knowledge. "
             "If asked about your sources, list the titles of the documents you used from the context, but NEVER show the raw context itself."
+            "The answer should be intended for Swiss users, please use Standard International System of Units (SI) "
+            "and Swiss Francs (CHF) for currency. "
+            "However, use other units if subject relevant or if the user explicitly asks for them. "
         )
         if context:
             system_prompt += f"\n\nUse the following context if relevant:\nContext:\n{context}"
@@ -139,12 +142,12 @@ def getContext(query, listOfIndexes):
     return ""
 
 
-async def get_agent_response_full(message,lstMessageHistory,creativity,modules,maxTokens,useRag,mode,listOfIndexes):
+async def get_agent_response_full(message,lstMessageHistory,temperature,modules,maxTokens,useRag,mode,listOfIndexes):
     current_app.logger.info("=" * 50)
     current_app.logger.info("AGENT WORKFLOW EXECUTION STARTED")
     current_app.logger.info("=" * 50)
     current_app.logger.info(f"Message: {message[:100]}...")
-    current_app.logger.info(f"Parameters: creativity={creativity}, modules={modules}, maxTokens={maxTokens}, useRag={useRag}, mode={mode}")
+    current_app.logger.info(f"Parameters: temperature={temperature}, modules={modules}, maxTokens={maxTokens}, useRag={useRag}, mode={mode}")
     current_app.logger.info(f"Message history received: {len(lstMessageHistory) if lstMessageHistory else 0} messages")
     
     # Verify agent availability

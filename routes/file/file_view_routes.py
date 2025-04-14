@@ -14,11 +14,11 @@ def after_request(response):
     """Add cache headers after each request"""
     return add_cache_headers(response)
 
-@file_view_bp.route("/delete/<path:filename>", methods=["POST"])
-def delete_file(filename):
+@file_view_bp.route("/delete/<path:file_id>", methods=["POST"])
+def delete_file(file_id):
     """Delete a cached file from storage.
     
-    The path parameter can handle slashes in the filename.
+    The path parameter can handle slashes in the file_id.
     """
     try:
     
@@ -30,10 +30,10 @@ def delete_file(filename):
         filter_type = request.args.get('type', '')
         filter_folder = request.args.get('folder', '')
         
-        current_app.logger.info(f"Attempting to delete file: {filename}")
-        delete_file_from_storage(filename)
+        current_app.logger.info(f"Attempting to delete file: {file_id}")
+        delete_file_from_storage(file_id)
         refresh_file_index_cache()  # Refresh cache after deleting content
-        flash(f"Cached content {filename} deleted successfully!")
+        flash(f"Cached content {file_id} deleted successfully!")
         
         # Check if we need to adjust the page number after deletion
         content_indexes = get_available_indexes(filter_folder if filter_folder else None)
