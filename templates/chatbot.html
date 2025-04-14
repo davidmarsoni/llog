@@ -110,7 +110,7 @@
                       hx-post="{{ url_for('chatbot.get_query_response') }}"
                       hx-target="#ai-response-placeholder"
                       hx-swap="outerHTML"
-                      hx-indicator="#send-loading"
+                      
                       hx-disabled-elt="#send-button">
                     <!-- Message input with send button underneath -->
                     <div class="border rounded-lg overflow-hidden shadow-xs">
@@ -147,9 +147,6 @@
                                     <div class="absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full transform peer-checked:translate-x-4"></div>
                                 </div>
                                 
-                                <div id="send-loading" class="loading-indicator mr-2 hidden">
-                                    <div class="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-blue-600"></div>
-                                </div>
                                 <button id="send-button" 
                                         type="submit" 
                                         class="px-4 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -204,7 +201,7 @@
             const contentIdsContainer = document.getElementById('content-ids-container');
             const chatbotModeSelect = document.getElementById('chatbot-mode');
             const chatForm = document.getElementById('chat-form');
-            const sendLoading = document.getElementById('send-loading');
+            
             const mainChatArea = document.querySelector('.grow'); // Get the main chat area
             const errorToast = document.getElementById('error-toast');
             
@@ -284,7 +281,6 @@
 
                 // Validate the request length
                 const requestLength = messageValue.length;
-                console.log(messageValue.length, messageValue);
                 if (requestLength > 2000) {
                     showError('The total request length exceeds the maximum limit of 2000 characters.');
                     messageInput.focus(); // Focus the invalid field
@@ -293,8 +289,6 @@
                 
                 // --- Validation End ---
 
-                // Show the loading indicator immediately
-                sendLoading.classList.remove('hidden');
                 
                 // Create message object and add to history
                 const userMessage = {
@@ -395,7 +389,6 @@
                                     content: textContent
                                 };
                                 messageHistory.push(assistantMessage);
-                                console.log('Added assistant response to history:', textContent.substring(0, 50) + '...');
                             }
                         }
                         
@@ -403,13 +396,11 @@
                         chatContainer.scrollTop = chatContainer.scrollHeight;
                     }
                     
-                    // Hide loading indicator
-                    sendLoading.classList.add('hidden');
+                    
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    // Hide loading indicator
-                    sendLoading.classList.add('hidden');
+                    
                     // Show error message
                     showError('Error sending message. Please try again.');
                     // Remove the loading placeholder
@@ -438,9 +429,9 @@
             chatForm.addEventListener('htmx:beforeRequest', function(event) {
                 // Only show the loading indicator for actual message submissions
                 // not for character counting requests
-                if (!event.detail.path.includes('check-message-length')) {
+                if (event.detail.requestConfig && !event.detail.requestConfig.path.includes('check-message-length')) {
                     // Make sure loading indicator is visible
-                    sendLoading.classList.remove('hidden');
+                    
                 }
             });
             
@@ -448,7 +439,7 @@
             document.body.addEventListener('htmx:afterSwap', function(event) {
                 if (event.detail.target.id === 'chat-container') {
                     // Hide loading indicator
-                    sendLoading.classList.add('hidden');
+                    
                     
                     // Process markdown in new AI responses
                     const lastMessage = event.detail.target.lastElementChild;
@@ -463,17 +454,10 @@
                 }
             });
             
-            // Also handle errors
-            document.body.addEventListener('htmx:responseError', function(event) {
-                sendLoading.classList.add('hidden');
-            });
-            
             // Update form target when chatbot mode changes
             chatbotModeSelect.addEventListener('change', function() {
                 const mode = this.value;
                 let targetUrl = '';
-
-                console.log('Selected mode:', mode);
                 
                 switch(mode) {
                     case 'standard':
@@ -488,7 +472,8 @@
                 
                 chatForm.setAttribute('hx-post', targetUrl);
             });
-              // Toggle advanced options visibility (renamed from content options)
+
+            // Toggle advanced options visibility (renamed from content options)
             // Add event listener to the checkbox
             useContent.addEventListener('change', toggleAdvancedOptions);
             
@@ -586,21 +571,7 @@
                 }
             });
             
-            // Process markdown in new AI responses (for HTMX responses)
-            document.body.addEventListener('htmx:afterSwap', function(event) {
-                if (event.detail.target.id === 'chat-container') {
-                    const lastMessage = event.detail.target.lastElementChild;
-                    if (lastMessage && lastMessage.querySelector('.text-blue-600')) {
-                        const messageContent = lastMessage.querySelector('.bg-blue-100');
-                        if (messageContent) {
-                            const text = messageContent.textContent;
-                            messageContent.innerHTML = marked.parse(text);
-                            messageContent.classList.add('markdown-content');
-                        }
-                    }
-                }
-            });
-              // Update hidden inputs for selected content IDs
+            // Update hidden inputs for selected content IDs
             function updateContentIds() {
                 contentIdsContainer.innerHTML = '';
                 document.querySelectorAll('.content-index-checkbox:checked').forEach(checkbox => {
@@ -628,7 +599,6 @@
             document.querySelectorAll('input[name="agent_type"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     agentTypeInput.value = this.value;
-                    console.log('Agent type changed to:', this.value);
                 });
             });
             
@@ -653,89 +623,5 @@
             messageInput.focus();
         });
     </script>
-      <!-- Tailwind classes replace custom CSS -->
-    <script>
-        // Add Tailwind classes to rendered markdown content
-        document.addEventListener('DOMContentLoaded', function() {
-            function styleMarkdownElements() {
-                // Select all markdown content containers
-                document.querySelectorAll('.markdown-content').forEach(container => {
-                    // Style headings
-                    container.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(heading => {
-                        heading.classList.add('font-semibold', 'mt-4', 'mb-2', 'text-slate-800');
-                    });
-                    container.querySelectorAll('h1').forEach(h => h.classList.add('text-2xl'));
-                    container.querySelectorAll('h2').forEach(h => h.classList.add('text-xl'));
-                    container.querySelectorAll('h3').forEach(h => h.classList.add('text-lg'));
-                    
-                    // Style paragraphs
-                    container.querySelectorAll('p').forEach(p => p.classList.add('mb-3'));
-                    
-                    // Style code blocks
-                    container.querySelectorAll('code:not(pre code)').forEach(code => {
-                        code.classList.add('bg-blue-50', 'px-1.5', 'py-0.5', 'rounded', 'text-sm', 'font-mono', 'text-blue-600', 'border', 'border-blue-100');
-                    });
-                    
-                    // Style pre blocks (code blocks)
-                    container.querySelectorAll('pre').forEach(pre => {
-                        pre.classList.add('bg-gray-50', 'p-3', 'rounded-md', 'overflow-x-auto', 'my-3', 'border', 'border-gray-200');
-                        pre.querySelectorAll('code').forEach(code => {
-                            code.classList.add('bg-transparent', 'p-0', 'border-0', 'text-sm', 'font-mono');
-                        });
-                    });
-                    
-                    // Style blockquotes
-                    container.querySelectorAll('blockquote').forEach(quote => {
-                        quote.classList.add('border-l-4', 'border-blue-500', 'pl-4', 'py-2', 'my-3', 'bg-blue-50', 'rounded-r');
-                    });
-                    
-                    // Style lists
-                    container.querySelectorAll('ul,ol').forEach(list => {
-                        list.classList.add('my-3', 'ml-6');
-                        list.querySelectorAll('li').forEach(item => item.classList.add('mb-1'));
-                    });
-                    
-                    // Style links
-                    container.querySelectorAll('a').forEach(link => {
-                        link.classList.add('text-blue-600', 'border-b', 'border-blue-500', 'hover:opacity-80');
-                    });
-                    
-                    // Style horizontal rules
-                    container.querySelectorAll('hr').forEach(hr => {
-                        hr.classList.add('my-4', 'border-0', 'h-px', 'bg-gray-300');
-                    });
-                    
-                    // Style tables
-                    container.querySelectorAll('table').forEach(table => {
-                        table.classList.add('w-full', 'my-3', 'text-sm', 'border-collapse');
-                        table.querySelectorAll('th,td').forEach(cell => {
-                            cell.classList.add('p-2', 'border', 'border-gray-300');
-                        });
-                        table.querySelectorAll('th').forEach(header => {
-                            header.classList.add('bg-gray-50', 'font-semibold');
-                        });
-                    });
-                    
-                    // Style images
-                    container.querySelectorAll('img').forEach(img => {
-                        img.classList.add('max-w-full', 'h-auto', 'rounded');
-                    });
-                });
-            }
-            
-            // Apply styles initially
-            styleMarkdownElements();
-            
-            // Create observer to apply styles to dynamically added content
-            const observer = new MutationObserver(() => {
-                styleMarkdownElements();
-            });
-            
-            // Start observing the chat container for added nodes
-            observer.observe(document.getElementById('chat-container'), { 
-                childList: true,
-                subtree: true
-            });
-        });
-    </script>
+    
 {% endblock %}
