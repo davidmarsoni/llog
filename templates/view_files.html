@@ -469,7 +469,8 @@ function initializeUI() {
     document.addEventListener('click', function(e) {
         if (e.target.closest('.delete-btn')) {
             e.preventDefault();
-            const deleteForm = e.target.closest('.delete-form');
+            const deleteButton = e.target.closest('.delete-btn'); // Get the button itself
+            const deleteForm = deleteButton.closest('.delete-form'); // Get the form
             const itemTitle = deleteForm.dataset.title;
             const modal = document.getElementById('delete-modal');
             const modalText = document.getElementById('modal-text');
@@ -481,9 +482,9 @@ function initializeUI() {
                 modalText.textContent = `Are you sure you want to delete "${itemTitle}"?`;
                 modal.classList.remove('hidden');
 
-                // Handle confirm button
+                // Handle confirm button - Updated to call deleteItemWithFeedback
                 confirmBtn.onclick = function() {
-                    deleteForm.submit();
+                    deleteItemWithFeedback(deleteForm, deleteButton); // Pass form and button
                 };
 
                 // Handle close button
@@ -509,6 +510,97 @@ function initializeUI() {
     
     // Direct setup of folder management buttons
     setupFolderManagementButtons();
+}
+
+// Function to handle item deletion with feedback
+function deleteItemWithFeedback(form, buttonElement) {
+    if (!form || !buttonElement) return;
+
+    // Prevent submitting multiple times
+    if (form.dataset.isSubmitting === 'true') {
+        return;
+    }
+    form.dataset.isSubmitting = 'true';
+
+    // Get item information
+    const itemTitle = form.dataset.title || 'this item';
+
+    // Close the modal first
+    closeModal('delete-modal');
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'fixed right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md z-50 transform transition-transform duration-300 ease-in-out translate-x-full refresh-notification'; // Use red for delete
+    notification.style.maxWidth = '400px';
+    notification.style.top = '-1000px'; // Position off-screen initially
+    notification.style.opacity = '0';
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <div class="mr-3">
+                <svg class="animate-spin h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="font-bold">Deleting Item</p>
+                <p class="text-sm">Deleting "${itemTitle}"...</p>
+            </div>
+        </div>
+    `;
+    notification.dataset.type = "item-delete"; // Identify notification type
+
+    // Add the notification to the body
+    document.body.appendChild(notification);
+
+    // Position the notification dynamically
+    positionNotification(notification);
+
+    // Make the notification visible
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.classList.remove('translate-x-full');
+    }, 10);
+
+    // Save the original button content
+    const originalContent = buttonElement.innerHTML;
+
+    // Disable the button and show loading state
+    buttonElement.disabled = true;
+    buttonElement.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Deleting...
+    `;
+    buttonElement.classList.add('opacity-75', 'cursor-wait');
+
+    // Submit the form after a short delay to allow UI updates
+    setTimeout(() => {
+        form.submit();
+    }, 50); // Small delay
+
+    // Set a timeout to remove the notification (page will likely reload anyway)
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                    repositionAllNotifications();
+                }
+            }, 300);
+        }
+        // Reset form state in case submission fails or is interrupted
+        form.dataset.isSubmitting = 'false';
+        // Optionally reset button state if needed, though usually not necessary on delete
+        // if (document.body.contains(buttonElement)) {
+        //     buttonElement.disabled = false;
+        //     buttonElement.innerHTML = originalContent;
+        //     buttonElement.classList.remove('opacity-75', 'cursor-wait');
+        // }
+    }, 5000); // 5 second timeout for the notification
 }
 
 // Function to set up folder management buttons with direct event handlers
